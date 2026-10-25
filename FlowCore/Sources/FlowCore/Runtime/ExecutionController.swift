@@ -4,7 +4,7 @@ import Synchronization
 /// What the interpreter tells the UI while it runs.
 public enum ExecutionEvent: Sendable {
     case output(String, newline: Bool)
-    case inputRequested(variable: String, type: DataType)
+    case inputRequested(variable: String, type: DataType, statement: Statement.ID)
     case inputRejected(text: String, type: DataType)
     /// The shape about to run; only sent when running slowly or stepping.
     case highlight(Statement.ID, function: String)
@@ -43,6 +43,12 @@ public struct VariablesSnapshot: Sendable, Hashable {
         public var id: Int
         public var function: String
         public var variables: [Variable]
+
+        public init(id: Int, function: String, variables: [Variable]) {
+            self.id = id
+            self.function = function
+            self.variables = variables
+        }
     }
 
     public struct Variable: Sendable, Hashable, Identifiable {
@@ -53,6 +59,13 @@ public struct VariablesSnapshot: Sendable, Hashable {
         public var value: Value?
         /// Elements for arrays, `nil` for scalars.
         public var elements: [Value?]?
+
+        public init(name: String, type: DataType, value: Value?, elements: [Value?]?) {
+            self.name = name
+            self.type = type
+            self.value = value
+            self.elements = elements
+        }
     }
 
     public var frames: [Frame]
@@ -207,7 +220,7 @@ public final class ExecutionController: Sendable {
     }
 
     /// Waits for the user to type a value. Throws if the program is stopped meanwhile.
-    func readInput(variable: String, type: DataType) async throws -> String {
+    func readInput(variable: String, type: DataType, statement: Statement.ID) async throws -> String {
         let text = await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
             let stopped = state.withLock { s -> Bool in
                 if s.stopRequested { return true }
@@ -217,7 +230,7 @@ public final class ExecutionController: Sendable {
             if stopped {
                 continuation.resume(returning: nil)
             } else {
-                emit(.inputRequested(variable: variable, type: type))
+                emit(.inputRequested(variable: variable, type: type, statement: statement))
             }
         }
         guard let text else { throw Stopped() }

@@ -249,7 +249,7 @@ public final class Interpreter: @unchecked Sendable {
         case .input(let target):
             let type = try targetType(target, in: frame)
             while true {
-                let text = try await controller.readInput(variable: target.display, type: type)
+                let text = try await controller.readInput(variable: target.display, type: type, statement: statement.id)
                 if let value = Interpreter.parseInput(text, as: type) {
                     try await store(value, into: target, in: frame)
                     break

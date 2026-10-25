@@ -1,0 +1,2980 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "\"Hello \" & name": {
+      "shouldTranslate": false
+    },
+    "\"data.txt\"": {
+      "shouldTranslate": false
+    },
+    "%@  ·  %@%@": {
+      "shouldTranslate": false
+    },
+    "%@ = %@ down to %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ = %2$@ giù fino a %3$@"
+          }
+        }
+      }
+    },
+    "%@ = %@ to %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ = %2$@ fino a %3$@"
+          }
+        }
+      }
+    },
+    "%@ Array": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vettore %@"
+          }
+        }
+      }
+    },
+    "%@: the value is outside the allowed range.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: il valore è fuori dall'intervallo consentito."
+          }
+        }
+      }
+    },
+    "%lld": {
+      "shouldTranslate": false
+    },
+    "%lld elements": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld elementi"
+          }
+        }
+      }
+    },
+    "%lld isn't a valid array size.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld non è una dimensione valida per un array."
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "shouldTranslate": false
+    },
+    "1": {
+      "shouldTranslate": false
+    },
+    "10": {
+      "shouldTranslate": false
+    },
+    "100": {
+      "shouldTranslate": false
+    },
+    "90": {
+      "shouldTranslate": false
+    },
+    "A": {
+      "shouldTranslate": false
+    },
+    "A %@ value can't be stored in “%@”, which is %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un valore %1$@ non può essere memorizzato in “%2$@”, che è %3$@."
+          }
+        }
+      }
+    },
+    "A file is already open. Close it first.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'è già un file aperto. Chiudilo prima."
+          }
+        }
+      }
+    },
+    "A function with this name already exists.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esiste già una funzione con questo nome."
+          }
+        }
+      }
+    },
+    "A name is missing.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manca un nome."
+          }
+        }
+      }
+    },
+    "A note for whoever reads the flowchart. It doesn't affect the program.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una nota per chi legge il diagramma. Non influisce sul programma."
+          }
+        }
+      }
+    },
+    "A text is missing its closing quote in “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In “%@” manca la virgoletta di chiusura di un testo."
+          }
+        }
+      }
+    },
+    "Actual Size": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimensioni reali"
+          }
+        }
+      }
+    },
+    "Actual size": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimensioni reali"
+          }
+        }
+      }
+    },
+    "Add Function": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi funzione"
+          }
+        }
+      }
+    },
+    "Add Function…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi funzione…"
+          }
+        }
+      }
+    },
+    "Add Parameter": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi parametro"
+          }
+        }
+      }
+    },
+    "Add a shape here": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi un blocco qui"
+          }
+        }
+      }
+    },
+    "Always": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sempre"
+          }
+        }
+      }
+    },
+    "App language": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lingua dell'app"
+          }
+        }
+      }
+    },
+    "Appearance": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aspetto"
+          }
+        }
+      }
+    },
+    "Append": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunta"
+          }
+        }
+      }
+    },
+    "Array": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Array"
+          }
+        }
+      }
+    },
+    "Array size": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimensione dell'array"
+          }
+        }
+      }
+    },
+    "Assign": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assegnazione"
+          }
+        }
+      }
+    },
+    "Authors": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autori"
+          }
+        }
+      }
+    },
+    "Average": {
+      "shouldTranslate": false
+    },
+    "Background": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sfondo"
+          }
+        }
+      }
+    },
+    "Black": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nero"
+          }
+        }
+      }
+    },
+    "Black & White": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bianco e nero"
+          }
+        }
+      }
+    },
+    "Blue": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blu"
+          }
+        }
+      }
+    },
+    "Boolean": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Booleano"
+          }
+        }
+      }
+    },
+    "Breakpoint": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interruzione"
+          }
+        }
+      }
+    },
+    "Breakpoint: execution paused.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interruzione: esecuzione in pausa."
+          }
+        }
+      }
+    },
+    "Brown": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marrone"
+          }
+        }
+      }
+    },
+    "Call": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiamata"
+          }
+        }
+      }
+    },
+    "Call %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiama %@"
+          }
+        }
+      }
+    },
+    "Can't access the file “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile accedere al file “%@”."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
+          }
+        }
+      }
+    },
+    "Changes the color of the lines the turtle draws.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambia il colore delle linee disegnate dalla tartaruga."
+          }
+        }
+      }
+    },
+    "Chat bubbles": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bolle di chat"
+          }
+        }
+      }
+    },
+    "Checks a Boolean expression and runs the True or the False branch.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Controlla un'espressione booleana ed esegue il ramo Vero o il ramo Falso."
+          }
+        }
+      }
+    },
+    "Classic": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classico"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulisci"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiusura"
+          }
+        }
+      }
+    },
+    "Close file": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiudi file"
+          }
+        }
+      }
+    },
+    "Closes the file opened with the Open shape.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiude il file aperto con il blocco Apertura."
+          }
+        }
+      }
+    },
+    "Closes the open file.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiude il file aperto."
+          }
+        }
+      }
+    },
+    "Code": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codice"
+          }
+        }
+      }
+    },
+    "Color scheme": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schema colori"
+          }
+        }
+      }
+    },
+    "Comment": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commento"
+          }
+        }
+      }
+    },
+    "Compact layout": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disposizione compatta"
+          }
+        }
+      }
+    },
+    "Condition": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condizione"
+          }
+        }
+      }
+    },
+    "Console": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Console"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua"
+          }
+        }
+      }
+    },
+    "Copy": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia"
+          }
+        }
+      }
+    },
+    "Counts a variable through a range of values, running the body each time.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fa scorrere una variabile in un intervallo di valori, eseguendo il corpo ogni volta."
+          }
+        }
+      }
+    },
+    "Create": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea"
+          }
+        }
+      }
+    },
+    "Creates variables or arrays. Separate several names with commas.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea variabili o array. Separa più nomi con le virgole."
+          }
+        }
+      }
+    },
+    "Cut": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taglia"
+          }
+        }
+      }
+    },
+    "Declare": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichiarazione"
+          }
+        }
+      }
+    },
+    "Declare this variable inside the function and assign it: its value is returned at the end.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichiara questa variabile dentro la funzione e assegnale un valore: viene restituito alla fine."
+          }
+        }
+      }
+    },
+    "Decreasing": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decrescente"
+          }
+        }
+      }
+    },
+    "Default speed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velocità predefinita"
+          }
+        }
+      }
+    },
+    "Degrees": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gradi"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina"
+          }
+        }
+      }
+    },
+    "Delete Function": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elimina funzione"
+          }
+        }
+      }
+    },
+    "Description": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descrizione"
+          }
+        }
+      }
+    },
+    "Direction": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direzione"
+          }
+        }
+      }
+    },
+    "Distance": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distanza"
+          }
+        }
+      }
+    },
+    "Division by zero.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Divisione per zero."
+          }
+        }
+      }
+    },
+    "Do": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fai…mentre"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termina"
+          }
+        }
+      }
+    },
+    "Draw a line": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disegna una linea"
+          }
+        }
+      }
+    },
+    "Duplicate": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplica"
+          }
+        }
+      }
+    },
+    "Edit Function": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica funzione"
+          }
+        }
+      }
+    },
+    "Edit Function…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica funzione…"
+          }
+        }
+      }
+    },
+    "Edit…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica…"
+          }
+        }
+      }
+    },
+    "End": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fine"
+          }
+        }
+      }
+    },
+    "End value": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valore finale"
+          }
+        }
+      }
+    },
+    "English": {
+      "shouldTranslate": false
+    },
+    "Enter a value for %@ (%@)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inserisci un valore per %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Erases the drawing and moves the turtle home.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancella il disegno e riporta la tartaruga al punto iniziale."
+          }
+        }
+      }
+    },
+    "Error": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Errore"
+          }
+        }
+      }
+    },
+    "Error in %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Errore in %@"
+          }
+        }
+      }
+    },
+    "Evaluates an expression and shows the result in the console.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calcola un'espressione e mostra il risultato nella console."
+          }
+        }
+      }
+    },
+    "Execution": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esecuzione"
+          }
+        }
+      }
+    },
+    "Expected “%@” but found “%@” in “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mi aspettavo “%1$@” ma ho trovato “%2$@” in “%3$@”."
+          }
+        }
+      }
+    },
+    "Export": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta"
+          }
+        }
+      }
+    },
+    "Export Flowchart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta diagramma"
+          }
+        }
+      }
+    },
+    "Export or print the flowchart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esporta o stampa il diagramma"
+          }
+        }
+      }
+    },
+    "Expression": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espressione"
+          }
+        }
+      }
+    },
+    "False": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falso"
+          }
+        }
+      }
+    },
+    "Fast": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veloce"
+          }
+        }
+      }
+    },
+    "File name": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome del file"
+          }
+        }
+      }
+    },
+    "Files": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        }
+      }
+    },
+    "Finished": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminato"
+          }
+        }
+      }
+    },
+    "Flowchart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diagramma"
+          }
+        }
+      }
+    },
+    "For": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per"
+          }
+        }
+      }
+    },
+    "Forward": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avanza"
+          }
+        }
+      }
+    },
+    "Forward %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avanza %@"
+          }
+        }
+      }
+    },
+    "Full speed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Massima velocità"
+          }
+        }
+      }
+    },
+    "Function call": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiamata di funzione"
+          }
+        }
+      }
+    },
+    "Functions": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funzioni"
+          }
+        }
+      }
+    },
+    "Functions take parameters and can return a value through a variable.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le funzioni ricevono parametri e possono restituire un valore tramite una variabile."
+          }
+        }
+      }
+    },
+    "Gray": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grigio"
+          }
+        }
+      }
+    },
+    "Green": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verde"
+          }
+        }
+      }
+    },
+    "Greet(name)": {
+      "shouldTranslate": false
+    },
+    "Home": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Punto iniziale"
+          }
+        }
+      }
+    },
+    "If": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se"
+          }
+        }
+      }
+    },
+    "Ignore Breakpoints": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignora interruzioni"
+          }
+        }
+      }
+    },
+    "Ignore breakpoints": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignora interruzioni"
+          }
+        }
+      }
+    },
+    "Increasing": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crescente"
+          }
+        }
+      }
+    },
+    "Index %lld is outside “%@”, which has %lld elements (0 to %lld).": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'indice %1$lld è fuori da “%2$@”, che ha %3$lld elementi (da 0 a %4$lld)."
+          }
+        }
+      }
+    },
+    "Input": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura"
+          }
+        }
+      }
+    },
+    "Input %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi %@"
+          }
+        }
+      }
+    },
+    "Input / Output": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura / Scrittura"
+          }
+        }
+      }
+    },
+    "Insert a variable": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inserisci una variabile"
+          }
+        }
+      }
+    },
+    "Integer": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intero"
+          }
+        }
+      }
+    },
+    "Invalid argument for %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Argomento non valido per %@."
+          }
+        }
+      }
+    },
+    "Italiano": {
+      "shouldTranslate": false
+    },
+    "Just move": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sposta e basta"
+          }
+        }
+      }
+    },
+    "Keywords in expressions (and, or, not, mod, true, false) stay in English in every language, as in Flowgorithm.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le parole chiave nelle espressioni (and, or, not, mod, true, false) restano in inglese in ogni lingua, come in Flowgorithm."
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lingua"
+          }
+        }
+      }
+    },
+    "Last saved": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultimo salvataggio"
+          }
+        }
+      }
+    },
+    "Left": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sinistra"
+          }
+        }
+      }
+    },
+    "Less": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meno"
+          }
+        }
+      }
+    },
+    "Loops": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cicli"
+          }
+        }
+      }
+    },
+    "Main": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main"
+          }
+        }
+      }
+    },
+    "Maximum call depth": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profondità massima delle chiamate"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media"
+          }
+        }
+      }
+    },
+    "Mode": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modalità"
+          }
+        }
+      }
+    },
+    "Modern": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderno"
+          }
+        }
+      }
+    },
+    "More": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altro"
+          }
+        }
+      }
+    },
+    "Move %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sposta %@"
+          }
+        }
+      }
+    },
+    "Moves the turtle back to the center, facing up.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riporta la tartaruga al centro, rivolta verso l'alto."
+          }
+        }
+      }
+    },
+    "Moves the turtle forward, drawing a line if the pen is down.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fa avanzare la tartaruga, disegnando una linea se la penna è abbassata."
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nome"
+          }
+        }
+      }
+    },
+    "Neon": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neon"
+          }
+        }
+      }
+    },
+    "New Function": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova funzione"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripeti"
+          }
+        }
+      }
+    },
+    "No file is open. Use an Open shape first.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun file aperto. Usa prima un blocco Apertura."
+          }
+        }
+      }
+    },
+    "No parameters": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun parametro"
+          }
+        }
+      }
+    },
+    "No value yet": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancora nessun valore"
+          }
+        }
+      }
+    },
+    "Nothing": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niente"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Only when a condition is true": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo quando una condizione è vera"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apertura"
+          }
+        }
+      }
+    },
+    "Open %@ for appending": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri %@ in aggiunta"
+          }
+        }
+      }
+    },
+    "Open %@ for reading": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri %@ in lettura"
+          }
+        }
+      }
+    },
+    "Open %@ for writing": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri %@ in scrittura"
+          }
+        }
+      }
+    },
+    "Opens a text file for reading or writing. Relative paths start from the flowchart's folder.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apre un file di testo in lettura o scrittura. I percorsi relativi partono dalla cartella del diagramma."
+          }
+        }
+      }
+    },
+    "Orange": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arancione"
+          }
+        }
+      }
+    },
+    "Output": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrittura"
+          }
+        }
+      }
+    },
+    "Output %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrivi %@"
+          }
+        }
+      }
+    },
+    "PDF Document…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documento PDF…"
+          }
+        }
+      }
+    },
+    "PNG Image…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immagine PNG…"
+          }
+        }
+      }
+    },
+    "Panel": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pannello"
+          }
+        }
+      }
+    },
+    "Panels": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pannelli"
+          }
+        }
+      }
+    },
+    "Parameters": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parametri"
+          }
+        }
+      }
+    },
+    "Paste": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incolla"
+          }
+        }
+      }
+    },
+    "Paste After": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incolla dopo"
+          }
+        }
+      }
+    },
+    "Pastel": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastello"
+          }
+        }
+      }
+    },
+    "Pause": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausa"
+          }
+        }
+      }
+    },
+    "Pause (⌥⌘P, F7)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausa (⌥⌘P, F7)"
+          }
+        }
+      }
+    },
+    "Paused": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In pausa"
+          }
+        }
+      }
+    },
+    "Pauses the program here, always or only when a condition is true.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mette in pausa il programma qui, sempre o solo quando una condizione è vera."
+          }
+        }
+      }
+    },
+    "Pen": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colore penna"
+          }
+        }
+      }
+    },
+    "Pen %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penna %@"
+          }
+        }
+      }
+    },
+    "Plain text": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testo semplice"
+          }
+        }
+      }
+    },
+    "Print Flowchart…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stampa diagramma…"
+          }
+        }
+      }
+    },
+    "Print…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stampa…"
+          }
+        }
+      }
+    },
+    "Program": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programma"
+          }
+        }
+      }
+    },
+    "Program Info": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informazioni sul programma"
+          }
+        }
+      }
+    },
+    "Program Info…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informazioni sul programma…"
+          }
+        }
+      }
+    },
+    "Program stopped.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programma interrotto."
+          }
+        }
+      }
+    },
+    "Pseudocode (English)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pseudocodice (inglese)"
+          }
+        }
+      }
+    },
+    "Pseudocode (Italian)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pseudocodice (italiano)"
+          }
+        }
+      }
+    },
+    "Purple": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viola"
+          }
+        }
+      }
+    },
+    "Read": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura file"
+          }
+        }
+      }
+    },
+    "Read %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi da file %@"
+          }
+        }
+      }
+    },
+    "Reads a value from the keyboard and stores it in a variable.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legge un valore dalla tastiera e lo memorizza in una variabile."
+          }
+        }
+      }
+    },
+    "Reads the next line of the open file into a variable.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legge la riga successiva del file aperto in una variabile."
+          }
+        }
+      }
+    },
+    "Ready": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pronto"
+          }
+        }
+      }
+    },
+    "Real": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reale"
+          }
+        }
+      }
+    },
+    "Red": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rosso"
+          }
+        }
+      }
+    },
+    "Remove All Breakpoints": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rimuovi tutte le interruzioni"
+          }
+        }
+      }
+    },
+    "Repeat while": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripeti mentre"
+          }
+        }
+      }
+    },
+    "Repeats its body while the expression is true. The check happens before each run.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripete il corpo finché l'espressione è vera. Il controllo avviene prima di ogni giro."
+          }
+        }
+      }
+    },
+    "Restart Now": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riavvia ora"
+          }
+        }
+      }
+    },
+    "Restart the app to apply the new language.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riavvia l'app per applicare la nuova lingua."
+          }
+        }
+      }
+    },
+    "Return": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restituisce"
+          }
+        }
+      }
+    },
+    "Return %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restituisci %@"
+          }
+        }
+      }
+    },
+    "Return variable": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variabile restituita"
+          }
+        }
+      }
+    },
+    "Returns": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restituisce"
+          }
+        }
+      }
+    },
+    "Right": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destra"
+          }
+        }
+      }
+    },
+    "Rotates the turtle left or right by a number of degrees.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruota la tartaruga a sinistra o a destra di un certo numero di gradi."
+          }
+        }
+      }
+    },
+    "Run": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esegui"
+          }
+        }
+      }
+    },
+    "Run one shape at a time (⌘', F6)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esegui un blocco alla volta (⌘', F6)"
+          }
+        }
+      }
+    },
+    "Run speed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velocità di esecuzione"
+          }
+        }
+      }
+    },
+    "Run the program (⌘R, F5)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esegui il programma (⌘R, F5)"
+          }
+        }
+      }
+    },
+    "Run the program to see its output here.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esegui il programma per vederne qui l'output."
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esecuzione"
+          }
+        }
+      }
+    },
+    "Running…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In esecuzione…"
+          }
+        }
+      }
+    },
+    "Runs a function, passing it arguments.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esegue una funzione, passandole degli argomenti."
+          }
+        }
+      }
+    },
+    "Runs its body, then repeats while the expression is true. The body runs at least once.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esegue il corpo e poi lo ripete finché l'espressione è vera. Il corpo viene eseguito almeno una volta."
+          }
+        }
+      }
+    },
+    "SVG Vector…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vettoriale SVG…"
+          }
+        }
+      }
+    },
+    "Save…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva…"
+          }
+        }
+      }
+    },
+    "Select All": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seleziona tutto"
+          }
+        }
+      }
+    },
+    "Selection": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selezione"
+          }
+        }
+      }
+    },
+    "Shapes": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blocchi"
+          }
+        }
+      }
+    },
+    "Show": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra"
+          }
+        }
+      }
+    },
+    "Show Console": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra console"
+          }
+        }
+      }
+    },
+    "Show Source Code": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra codice sorgente"
+          }
+        }
+      }
+    },
+    "Show Turtle Graphics": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra grafica tartaruga"
+          }
+        }
+      }
+    },
+    "Show Variables": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra variabili"
+          }
+        }
+      }
+    },
+    "Show dot grid": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra griglia a puntini"
+          }
+        }
+      }
+    },
+    "Show or Hide Panels": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra o nascondi pannelli"
+          }
+        }
+      }
+    },
+    "Show or hide console, variables, turtle and code": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra o nascondi console, variabili, tartaruga e codice"
+          }
+        }
+      }
+    },
+    "Slow": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lenta"
+          }
+        }
+      }
+    },
+    "Speed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velocità"
+          }
+        }
+      }
+    },
+    "Stack overflow: more than %lld nested calls. Is there a recursion that never ends?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stack overflow: più di %lld chiamate annidate. C'è una ricorsione che non finisce mai?"
+          }
+        }
+      }
+    },
+    "Start a new line after the output": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vai a capo dopo la scrittura"
+          }
+        }
+      }
+    },
+    "Start value": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valore iniziale"
+          }
+        }
+      }
+    },
+    "Step": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passo"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
+    "Stop (⌘., F8)": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop (⌘., F8)"
+          }
+        }
+      }
+    },
+    "Stopped": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interrotto"
+          }
+        }
+      }
+    },
+    "Stops runaway recursion with a clear error instead of freezing.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferma le ricorsioni infinite con un errore chiaro invece di bloccarsi."
+          }
+        }
+      }
+    },
+    "Stores the result of an expression in a variable.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memorizza il risultato di un'espressione in una variabile."
+          }
+        }
+      }
+    },
+    "String": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stringa"
+          }
+        }
+      }
+    },
+    "Style": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stile"
+          }
+        }
+      }
+    },
+    "System": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sistema"
+          }
+        }
+      }
+    },
+    "Teal": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verde acqua"
+          }
+        }
+      }
+    },
+    "Text size": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dimensione testo"
+          }
+        }
+      }
+    },
+    "The argument for “%@” in “%@” must be the name of an array.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'argomento per “%1$@” in “%2$@” deve essere il nome di un array."
+          }
+        }
+      }
+    },
+    "The condition must be true or false, but it's a %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La condizione deve essere vera o falsa, ma è di tipo %@."
+          }
+        }
+      }
+    },
+    "The end of the file has been reached. Check EOF() before reading.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai raggiunto la fine del file. Controlla EOF() prima di leggere."
+          }
+        }
+      }
+    },
+    "The file is open in the wrong mode for this operation.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file è aperto nella modalità sbagliata per questa operazione."
+          }
+        }
+      }
+    },
+    "The function “%@” doesn't exist.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La funzione “%@” non esiste."
+          }
+        }
+      }
+    },
+    "The function “%@” has no return variable.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La funzione “%@” non ha una variabile da restituire."
+          }
+        }
+      }
+    },
+    "The function “%@” must declare its return variable “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La funzione “%1$@” deve dichiarare la variabile restituita “%2$@”."
+          }
+        }
+      }
+    },
+    "The number is too big.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il numero è troppo grande."
+          }
+        }
+      }
+    },
+    "The program has no Main function.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il programma non ha una funzione Main."
+          }
+        }
+      }
+    },
+    "The variable “%@” doesn't exist. Declare it first with a Declare shape.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La variabile “%@” non esiste. Dichiarala prima con un blocco Dichiarazione."
+          }
+        }
+      }
+    },
+    "The variable “%@” has no value yet. Assign it or read it with Input first.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La variabile “%@” non ha ancora un valore. Assegnalo o leggilo prima con Lettura."
+          }
+        }
+      }
+    },
+    "The variable “%@” is already declared.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La variabile “%@” è già dichiarata."
+          }
+        }
+      }
+    },
+    "Theme": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tema"
+          }
+        }
+      }
+    },
+    "This shape is empty: double-click it to fill it in.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo blocco è vuoto: fai doppio clic per compilarlo."
+          }
+        }
+      }
+    },
+    "True": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vero"
+          }
+        }
+      }
+    },
+    "Turn": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruota"
+          }
+        }
+      }
+    },
+    "Turn left %@°": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruota a sinistra %@°"
+          }
+        }
+      }
+    },
+    "Turn right %@°": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruota a destra %@°"
+          }
+        }
+      }
+    },
+    "Turtle": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tartaruga"
+          }
+        }
+      }
+    },
+    "Turtle graphics": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grafica tartaruga"
+          }
+        }
+      }
+    },
+    "Turtle graphics and file shapes": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blocchi di grafica tartaruga e file"
+          }
+        }
+      }
+    },
+    "Two parameters are called “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due parametri si chiamano “%@”."
+          }
+        }
+      }
+    },
+    "Type": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tipo"
+          }
+        }
+      }
+    },
+    "Unexpected character “%@” in “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carattere inatteso “%1$@” in “%2$@”."
+          }
+        }
+      }
+    },
+    "Unexpected “%@” in “%@”.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” inatteso in “%2$@”."
+          }
+        }
+      }
+    },
+    "Unknown shape": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blocco sconosciuto"
+          }
+        }
+      }
+    },
+    "Untitled program": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programma senza titolo"
+          }
+        }
+      }
+    },
+    "Value": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valore"
+          }
+        }
+      }
+    },
+    "Variable": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variabile"
+          }
+        }
+      }
+    },
+    "Variable names": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nomi delle variabili"
+          }
+        }
+      }
+    },
+    "Variables": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variabili"
+          }
+        }
+      }
+    },
+    "Variables appear here while the program runs.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le variabili compaiono qui mentre il programma è in esecuzione."
+          }
+        }
+      }
+    },
+    "Very slow": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Molto lenta"
+          }
+        }
+      }
+    },
+    "Waiting for input": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In attesa di input"
+          }
+        }
+      }
+    },
+    "While": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mentre"
+          }
+        }
+      }
+    },
+    "Write": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrittura file"
+          }
+        }
+      }
+    },
+    "Write %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrivi su file %@"
+          }
+        }
+      }
+    },
+    "Writes a line to the open file.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrive una riga nel file aperto."
+          }
+        }
+      }
+    },
+    "Yellow": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giallo"
+          }
+        }
+      }
+    },
+    "Zoom In": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingrandisci"
+          }
+        }
+      }
+    },
+    "Zoom Out": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riduci"
+          }
+        }
+      }
+    },
+    "[%lld]": {
+      "shouldTranslate": false
+    },
+    "age": {
+      "shouldTranslate": false
+    },
+    "age >= 18": {
+      "shouldTranslate": false
+    },
+    "answer <> \"yes\"": {
+      "shouldTranslate": false
+    },
+    "i": {
+      "shouldTranslate": false
+    },
+    "i = 5": {
+      "shouldTranslate": false
+    },
+    "line": {
+      "shouldTranslate": false
+    },
+    "n <= 10": {
+      "shouldTranslate": false
+    },
+    "result": {
+      "shouldTranslate": false
+    },
+    "shape.declare": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichiara %2$@: %1$@"
+          }
+        }
+      }
+    },
+    "step %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "passo %@"
+          }
+        }
+      }
+    },
+    "total": {
+      "shouldTranslate": false
+    },
+    "total + 1": {
+      "shouldTranslate": false
+    },
+    "value": {
+      "shouldTranslate": false
+    },
+    "x, y, total": {
+      "shouldTranslate": false
+    },
+    "—": {
+      "shouldTranslate": false
+    },
+    "“%@” can't be converted to %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” non può essere convertito in %2$@."
+          }
+        }
+      }
+    },
+    "“%@” can't work on %@ and %@. To join text use &.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” non funziona con %2$@ e %3$@. Per unire testi usa &."
+          }
+        }
+      }
+    },
+    "“%@” can't work on a %@ value.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” non funziona con un valore %2$@."
+          }
+        }
+      }
+    },
+    "“%@” doesn't return a value, so it can't be used in an expression. Use a Call shape.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” non restituisce un valore, quindi non può stare in un'espressione. Usa un blocco Chiamata."
+          }
+        }
+      }
+    },
+    "“%@” ends too early: something is missing.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” finisce troppo presto: manca qualcosa."
+          }
+        }
+      }
+    },
+    "“%@” in “%@” expects %@, but got %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” in “%2$@” si aspetta %3$@, ma ha ricevuto %4$@."
+          }
+        }
+      }
+    },
+    "“%@” is a reserved word and can't be used as a name.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” è una parola riservata e non può essere usata come nome."
+          }
+        }
+      }
+    },
+    "“%@” is a reserved word.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” è una parola riservata."
+          }
+        }
+      }
+    },
+    "“%@” is an array: use an index, as in %@[0].": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” è un array: usa un indice, come in %2$@[0]."
+          }
+        }
+      }
+    },
+    "“%@” isn't a valid %@. Try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” non è un valore %2$@ valido. Riprova."
+          }
+        }
+      }
+    },
+    "“%@” isn't a valid name: use a letter followed by letters or digits, no spaces or symbols.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” non è un nome valido: usa una lettera seguita da lettere o cifre, senza spazi né simboli."
+          }
+        }
+      }
+    },
+    "“%@” isn't a valid number.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” non è un numero valido."
+          }
+        }
+      }
+    },
+    "“%@” isn't a variable name.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” non è il nome di una variabile."
+          }
+        }
+      }
+    },
+    "“%@” isn't an array, so it can't be used with [ ].": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” non è un array, quindi non si può usare con [ ]."
+          }
+        }
+      }
+    },
+    "“%@” needs %lld arguments, but got %lld.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” richiede %2$lld argomenti, ma ne ha ricevuti %3$lld."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
