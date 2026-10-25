@@ -170,7 +170,7 @@ enum ShapeText {
     }
 
     static func functionHeader(_ function: Function) -> String {
-        if function.isMain { return String(localized: "Main") }
+        if function.isMain { return String(localized: "chart.start", defaultValue: "Main", comment: "Label of the first shape of the Main function") }
         let params = function.parameters.map { "\(typeName($0.type))\($0.isArray ? "[]" : "") \($0.name)" }
         return "\(function.name)(\(params.joined(separator: ", ")))"
     }

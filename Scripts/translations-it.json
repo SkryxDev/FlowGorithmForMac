@@ -272,6 +272,7 @@
   "Yellow": "Giallo",
   "Zoom In": "Ingrandisci",
   "Zoom Out": "Riduci",
+  "chart.start": "Inizio",
   "shape.declare": "Dichiara %2$@: %1$@",
   "step %@": "passo %@",
   "“%@” can't be converted to %@.": "“%1$@” non può essere convertito in %2$@.",

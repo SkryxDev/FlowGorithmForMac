@@ -2,8 +2,19 @@ import AppKit
 import FlowCore
 import SwiftUI
 
+/// Starts on an empty flowchart, like Flowgorithm, instead of the Open panel.
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: ["NSShowAppCentricOpenPanelInsteadOfUntitledFile": false])
+    }
+
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { true }
+}
+
 @main
 struct FlowGorithmForMacApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
         DocumentGroup(newDocument: FlowDocument()) { file in
             DocumentView(document: file.$document, fileURL: file.fileURL)

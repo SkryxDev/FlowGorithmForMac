@@ -2775,6 +2775,16 @@
     "answer <> \"yes\"": {
       "shouldTranslate": false
     },
+    "chart.start": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inizio"
+          }
+        }
+      }
+    },
     "i": {
       "shouldTranslate": false
     },
