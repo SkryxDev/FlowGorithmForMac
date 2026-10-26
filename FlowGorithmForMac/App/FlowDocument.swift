@@ -12,8 +12,14 @@ nonisolated struct FlowDocument: FileDocument {
     static let readableContentTypes: [UTType] = [.flowchart, .xml]
     static let writableContentTypes: [UTType] = [.flowchart]
 
-    init(program: Program = .new()) {
+    init(program: Program = FlowDocument.newProgram()) {
         self.program = program
+    }
+
+    /// An empty flowchart, signed with the user's name unless they turned that off in Settings.
+    static func newProgram() -> Program {
+        let fillAuthor = UserDefaults.standard.object(forKey: SettingsKey.fillAuthor) as? Bool ?? true
+        return .new(authors: fillAuthor ? NSFullUserName() : "")
     }
 
     init(configuration: ReadConfiguration) throws {

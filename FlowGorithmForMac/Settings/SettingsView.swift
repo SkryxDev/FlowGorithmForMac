@@ -79,6 +79,7 @@ private struct RunningSettings: View {
     @AppStorage(SettingsKey.chatConsole) private var chatConsole = true
     @AppStorage(SettingsKey.runSpeed) private var speed = 1.0
     @AppStorage(SettingsKey.maxStack) private var maxStack = 5000
+    @AppStorage(SettingsKey.fillAuthor) private var fillAuthor = true
 
     var body: some View {
         Form {
@@ -101,6 +102,17 @@ private struct RunningSettings: View {
                     LabeledContent("Maximum call depth", value: "\(maxStack)")
                 }
                 Text("Stops runaway recursion with a clear error instead of freezing.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Files") {
+                Text("Programs can use files in the flowchart's folder freely. For any other file, the app asks you first.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("New flowcharts") {
+                Toggle("Fill in my name as author", isOn: $fillAuthor)
+                Text("The name is saved in the file, so whoever receives it can see it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

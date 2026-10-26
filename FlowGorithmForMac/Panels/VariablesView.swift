@@ -85,7 +85,10 @@ private struct ValueText: View {
 
     var body: some View {
         if let value {
-            Text(type == .string ? "\"\(value.displayString)\"" : value.displayString)
+            // A huge text would make the row slow to lay out; its start is enough to recognize it.
+            let text = value.displayString
+            let shown = text.utf8.count > 300 ? String(text.prefix(100)) + "…" : text
+            Text(type == .string ? "\"\(shown)\"" : shown)
                 .font(.system(.body, design: .monospaced).weight(.semibold))
                 .foregroundStyle(type.color)
                 .lineLimit(1)

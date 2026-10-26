@@ -100,11 +100,12 @@ public struct Program: Hashable, Sendable {
         functions.first { $0.body.statement(withID: statementID) != nil }
     }
 
-    public static func new() -> Program {
+    /// An empty program. `authors` defaults to the Mac account's full name, as Flowgorithm does.
+    public static func new(authors: String = NSFullUserName()) -> Program {
         var program = Program()
         program.attributes = [
             ProgramAttribute(name: "name", value: ""),
-            ProgramAttribute(name: "authors", value: NSFullUserName()),
+            ProgramAttribute(name: "authors", value: authors),
             ProgramAttribute(name: "about", value: ""),
         ]
         return program

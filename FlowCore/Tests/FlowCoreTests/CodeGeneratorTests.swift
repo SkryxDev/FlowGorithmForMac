@@ -79,6 +79,34 @@ struct CodeGeneratorTests {
         #expect(text.contains("System.out.println((double) 1 / 2);"))
     }
 
+    @Test func keywordsAreRenamed() {
+        let p = program([declare("class", .integer), assign("class", "1"), output("class")])
+        let java = CodeGenerator.generate(p, language: .java).text
+        #expect(java.contains("int class_;"))
+        #expect(java.contains("class_ = 1;"))
+        #expect(CodeGenerator.generate(p, language: .python).text.contains("class_ = 0"))
+        // Pseudocode has no keywords to avoid.
+        #expect(CodeGenerator.generate(p, language: .pseudocodeEnglish).text.contains("DECLARE Integer class"))
+    }
+
+    @Test func pythonRemainderFollowsTheDividend() {
+        let text = CodeGenerator.generate(program([output("-7 mod 3")]), language: .python).text
+        #expect(text.hasPrefix("import math"))
+        #expect(text.contains("print(int(math.fmod(-7, 3)))"))
+    }
+
+    @Test func kotlinEscapesDollarSigns() {
+        let text = CodeGenerator.generate(program([output("\"$5\"")]), language: .kotlin).text
+        #expect(text.contains("println(\"\\$5\")"))
+    }
+
+    @Test func javaCommentsCantEndEarly() {
+        let p = program([Statement(.comment(.init(text: "\\u000a System.exit(1);")))])
+        let text = CodeGenerator.generate(p, language: .java).text
+        #expect(!text.contains("\\u000a"))
+        #expect(text.contains("// \\ u000a System.exit(1);"))
+    }
+
     @Test func pseudocodeInItalian() {
         let p = program([declare("i", .integer),
                          Statement(.for(.init(variable: "i", start: "1", end: "10", direction: .increasing, step: "2", body: [output("i")])))])
@@ -88,7 +116,7 @@ struct CodeGeneratorTests {
         #expect(text.contains("FINE PER"))
     }
 
-    /// Writes every language to a folder so `Scripts/check-codegen.sh` can compile the results.
+    /// Writes every language to the folder in `CODEGEN_OUTPUT`, to compile the results by hand.
     @Test func writesSamplesWhenAsked() throws {
         guard let folder = ProcessInfo.processInfo.environment["CODEGEN_OUTPUT"] else { return }
         let url = URL(fileURLWithPath: folder)

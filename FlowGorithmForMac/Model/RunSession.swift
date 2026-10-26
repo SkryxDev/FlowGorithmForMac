@@ -11,6 +11,12 @@ struct ConsoleEntry: Identifiable, Hashable {
     var text: String
 }
 
+/// A program asking to use a file outside its flowchart's folder.
+struct FileRequest: Equatable {
+    var path: String
+    var mode: FileMode
+}
+
 struct TurtleSegment: Hashable {
     var from: CGPoint
     var to: CGPoint
@@ -21,9 +27,9 @@ struct TurtleSegment: Hashable {
 @Observable
 final class RunSession {
     enum State: Equatable {
-        case idle, running, paused, waitingForInput, finished, failed, stopped
+        case idle, running, paused, waitingForInput, waitingForPermission, finished, failed, stopped
 
-        var isActive: Bool { self == .running || self == .paused || self == .waitingForInput }
+        var isActive: Bool { self == .running || self == .paused || self == .waitingForInput || self == .waitingForPermission }
     }
 
     var state: State = .idle
@@ -39,6 +45,7 @@ final class RunSession {
     var currentFunctionName: String?
     var error: RuntimeError?
     var inputRequest: (variable: String, type: DataType)?
+    var fileRequest: FileRequest?
     var ignoreBreakpoints = false {
         didSet { controller?.setIgnoreBreakpoints(ignoreBreakpoints) }
     }
@@ -54,6 +61,8 @@ final class RunSession {
     private var eventTask: Task<Void, Never>?
     @ObservationIgnored private var nextEntryID = 0
     @ObservationIgnored private var outputLineOpen = false
+    /// Characters in the last output entry while it's still open.
+    @ObservationIgnored private var openLineLength = 0
     // Output and drawing arrive in bursts; they're collected here and shown about 30 times a second.
     @ObservationIgnored private var pendingOutput: [(text: String, newline: Bool)] = []
     @ObservationIgnored private var pendingSegments: [TurtleSegment] = []
@@ -61,6 +70,11 @@ final class RunSession {
     @ObservationIgnored private var flushScheduled = false
     private static let maxSegments = 200_000
     private static let maxConsoleEntries = 4000
+    /// A line printed without newlines is split into entries this long, so it can't grow
+    /// until the window freezes.
+    private static let maxEntryLength = 4000
+    /// Only the start of a single larger output is shown.
+    private static let maxOutputLength = 100_000
 
     /// A window closed while its program runs must not leave the program running in the background.
     isolated deinit {
@@ -80,6 +94,7 @@ final class RunSession {
         case .running: "Running…"
         case .paused: "Paused"
         case .waitingForInput: "Waiting for input"
+        case .waitingForPermission: "Waiting for permission"
         case .finished: "Finished"
         case .failed: "Error"
         case .stopped: "Stopped"
@@ -147,10 +162,22 @@ final class RunSession {
         controller?.provideInput(first)
     }
 
+    /// Answers the program's request to use a file outside the flowchart's folder.
+    func answerFileAccess(_ allowed: Bool) {
+        guard let request = fileRequest else { return }
+        fileRequest = nil
+        if allowed {
+            append(.info, String(localized: "Allowed access to “\(request.path)”."))
+        }
+        state = .running
+        controller?.answerFileAccess(allowed)
+    }
+
     func clearConsole() {
         pendingOutput.removeAll()
         console.removeAll()
         outputLineOpen = false
+        openLineLength = 0
         consoleRevision += 1
     }
 
@@ -171,6 +198,7 @@ final class RunSession {
         currentFunctionName = nil
         error = nil
         inputRequest = nil
+        fileRequest = nil
         pendingInputs = []
     }
 
@@ -191,13 +219,27 @@ final class RunSession {
         if !pendingOutput.isEmpty {
             var entries = console
             var open = outputLineOpen
+            var length = openLineLength
             for piece in pendingOutput {
-                if open, let last = entries.indices.last, entries[last].kind == .output {
-                    entries[last].text += piece.text
-                } else {
-                    entries.append(ConsoleEntry(id: nextEntryID, kind: .output, text: piece.text))
-                    nextEntryID += 1
+                var rest = Substring(piece.text)
+                if rest.utf8.count > Self.maxOutputLength {
+                    rest = Substring(String(rest.prefix(Self.maxOutputLength)) + "…")
                 }
+                repeat {
+                    if open, length < Self.maxEntryLength, let last = entries.indices.last, entries[last].kind == .output {
+                        let chunk = rest.prefix(Self.maxEntryLength - length)
+                        entries[last].text.append(contentsOf: chunk)
+                        length += chunk.count
+                        rest = rest.dropFirst(chunk.count)
+                    } else {
+                        let chunk = rest.prefix(Self.maxEntryLength)
+                        entries.append(ConsoleEntry(id: nextEntryID, kind: .output, text: String(chunk)))
+                        nextEntryID += 1
+                        length = chunk.count
+                        rest = rest.dropFirst(chunk.count)
+                    }
+                    open = true
+                } while !rest.isEmpty
                 open = !piece.newline
             }
             pendingOutput.removeAll(keepingCapacity: true)
@@ -206,6 +248,7 @@ final class RunSession {
             }
             console = entries
             outputLineOpen = open
+            openLineLength = length
             consoleRevision += 1
         }
         if !pendingSegments.isEmpty {
@@ -266,6 +309,11 @@ final class RunSession {
             inputRequest = inputRequest ?? ("", type)
             state = .waitingForInput
 
+        case .fileAccessRequested(let path, let mode, let statement):
+            currentStatement = statement
+            fileRequest = FileRequest(path: path, mode: mode)
+            state = .waitingForPermission
+
         case .highlight(let id, let function):
             currentStatement = id
             currentFunctionName = function
@@ -285,7 +333,7 @@ final class RunSession {
         case .turtle(.clear):
             pendingSegments.removeAll()
             segments.removeAll()
-        turtleGeneration += 1
+            turtleGeneration += 1
 
         case .finished(let snapshot):
             variables = snapshot
@@ -301,12 +349,14 @@ final class RunSession {
             append(.error, ErrorText.message(error))
             state = .failed
             inputRequest = nil
+            fileRequest = nil
             controller = nil
 
         case .stopped(let snapshot):
             variables = snapshot
             currentStatement = nil
             inputRequest = nil
+            fileRequest = nil
             append(.info, String(localized: "Program stopped."))
             state = .stopped
             controller = nil

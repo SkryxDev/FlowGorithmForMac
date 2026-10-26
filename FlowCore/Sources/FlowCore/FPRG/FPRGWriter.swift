@@ -12,7 +12,7 @@ public enum FPRGWriter {
     public static func string(_ program: Program, updatingSavedDate date: Date? = nil) -> String {
         var program = program
         if let date {
-            program[attribute: "saved"] = savedDateFormatter.string(from: date)
+            program[attribute: "saved"] = savedDate(date)
         }
         var out = "<?xml version=\"1.0\"?>\n"
         out += "<flowgorithm fileversion=\"\(escape(currentFileVersion))\">\n"
@@ -45,16 +45,19 @@ public enum FPRGWriter {
     }
 
     /// Parses a fragment written by `fragment(_:)`; statements get fresh identifiers.
+    /// The pasteboard can hold anything another app put there, so it's parsed as carefully as a file.
     public static func statements(fromFragment string: String) -> [Statement]? {
-        guard let element = try? XMLElement(xmlString: string), element.name == "body" else { return nil }
-        return FPRGReader.statements(in: element).map { $0.withNewIDs() }
+        guard let document = try? XMLDocument(xmlString: string, options: FPRGReader.parseOptions),
+              let element = document.rootElement(), element.name == "body",
+              let statements = try? FPRGReader.statements(in: element) else { return nil }
+        return statements.map { $0.withNewIDs() }
     }
 
-    static var savedDateFormatter: DateFormatter {
+    static func savedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd hh:mm:ss a"
-        return formatter
+        return formatter.string(from: date)
     }
 
     static func pad(_ indent: Int) -> String { String(repeating: "    ", count: indent) }
@@ -137,7 +140,7 @@ public enum FPRGWriter {
 
     static func escape(_ string: String) -> String {
         var out = ""
-        out.reserveCapacity(string.count)
+        out.reserveCapacity(string.utf8.count)
         for scalar in string.unicodeScalars {
             switch scalar {
             case "&": out += "&amp;"
@@ -147,9 +150,20 @@ public enum FPRGWriter {
             case "\r": out += "&#13;"
             case "\n": out += "&#10;"
             case "\t": out += "&#9;"
-            default: out.unicodeScalars.append(scalar)
+            default:
+                // Control characters (pasted from a PDF, say) can't appear in XML at all,
+                // not even escaped: writing one would make the file impossible to open.
+                if isAllowedInXML(scalar) { out.unicodeScalars.append(scalar) }
             }
         }
         return out
+    }
+
+    /// The characters XML 1.0 allows (surrogates can't occur in a Swift string).
+    public static func isAllowedInXML(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.value {
+        case 0x9, 0xA, 0xD, 0x20...0xFFFD, 0x10000...: true
+        default: false
+        }
     }
 }

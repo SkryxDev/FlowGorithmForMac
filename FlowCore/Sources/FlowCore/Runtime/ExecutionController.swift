@@ -6,6 +6,8 @@ public enum ExecutionEvent: Sendable {
     case output(String, newline: Bool)
     case inputRequested(variable: String, type: DataType, statement: Statement.ID)
     case inputRejected(text: String, type: DataType)
+    /// The program wants a file outside the flowchart's folder; answer with `answerFileAccess(_:)`.
+    case fileAccessRequested(path: String, mode: FileMode, statement: Statement.ID)
     /// The shape about to run; only sent when running slowly or stepping.
     case highlight(Statement.ID, function: String)
     case paused(at: Statement.ID, function: String, reason: PauseReason, variables: VariablesSnapshot)
@@ -86,6 +88,7 @@ public final class ExecutionController: Sendable {
         var ignoreBreakpoints = false
         var resume: CheckedContinuation<Void, Never>?
         var input: CheckedContinuation<String?, Never>?
+        var fileAccess: CheckedContinuation<Bool?, Never>?
     }
 
     private let state = Mutex(State())
@@ -140,16 +143,18 @@ public final class ExecutionController: Sendable {
     }
 
     public func stop() {
-        let (resume, input) = state.withLock { s in
+        let (resume, input, fileAccess) = state.withLock { s in
             s.stopRequested = true
             defer {
                 s.resume = nil
                 s.input = nil
+                s.fileAccess = nil
             }
-            return (s.resume, s.input)
+            return (s.resume, s.input, s.fileAccess)
         }
         resume?.resume()
         input?.resume(returning: nil)
+        fileAccess?.resume(returning: nil)
     }
 
     public func provideInput(_ text: String) {
@@ -158,6 +163,15 @@ public final class ExecutionController: Sendable {
             return s.input
         }
         continuation?.resume(returning: text)
+    }
+
+    /// Answers a `fileAccessRequested` event.
+    public func answerFileAccess(_ allowed: Bool) {
+        let continuation = state.withLock { s in
+            defer { s.fileAccess = nil }
+            return s.fileAccess
+        }
+        continuation?.resume(returning: allowed)
     }
 
     public var isStopRequested: Bool { state.withLock { $0.stopRequested } }
@@ -265,5 +279,24 @@ public final class ExecutionController: Sendable {
         }
         guard let text else { throw Stopped() }
         return text
+    }
+
+    /// Asks the user whether the program may use a file outside the flowchart's folder.
+    /// Throws if the program is stopped meanwhile.
+    func requestFileAccess(path: String, mode: FileMode, statement: Statement.ID) async throws -> Bool {
+        let allowed = await withCheckedContinuation { (continuation: CheckedContinuation<Bool?, Never>) in
+            let stopped = state.withLock { s -> Bool in
+                if s.stopRequested { return true }
+                s.fileAccess = continuation
+                return false
+            }
+            if stopped {
+                continuation.resume(returning: nil)
+            } else {
+                emit(.fileAccessRequested(path: path, mode: mode, statement: statement))
+            }
+        }
+        guard let allowed else { throw Stopped() }
+        return allowed
     }
 }

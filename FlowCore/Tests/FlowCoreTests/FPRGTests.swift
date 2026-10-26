@@ -122,6 +122,49 @@ struct FPRGTests {
         #expect(o.newline)
     }
 
+    @Test func externalEntitiesAreNotLoaded() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let secret = folder.appendingPathComponent("secret.txt")
+        try "TOPSECRET".write(to: secret, atomically: true, encoding: .utf8)
+        let xml = """
+        <?xml version="1.0"?>
+        <!DOCTYPE flowgorithm [<!ENTITY leak SYSTEM "\(secret.absoluteString)">]>
+        <flowgorithm fileversion="4.2">
+            <function name="Main" type="None" variable="">
+                <parameters/>
+                <body><note>&leak;</note></body>
+            </function>
+        </flowgorithm>
+        """
+        // Refusing the file and reading it without the entity are both fine; leaking it isn't.
+        let program = try? FPRGReader.read(Data(xml.utf8))
+        #expect(program.map { FPRGWriter.string($0).contains("TOPSECRET") } != true)
+    }
+
+    @Test func controlCharactersAreDroppedWhenSaving() throws {
+        let p = program([Statement(.comment(.init(text: "a\u{1}b\u{B}c\u{FFFE}d\te")))])
+        let reread = try FPRGReader.read(FPRGWriter.write(p))
+        guard case .comment(let comment) = reread.functions[0].body[0].kind else {
+            Issue.record("expected a comment")
+            return
+        }
+        #expect(comment.text == "abcd\te")
+    }
+
+    @Test func tooDeeplyNestedFilesAreRefused() {
+        let depth = 150
+        let body = String(repeating: "<while expression=\"true\">", count: depth) + String(repeating: "</while>", count: depth)
+        let xml = """
+        <?xml version="1.0"?>
+        <flowgorithm fileversion="4.2">
+            <function name="Main" type="None" variable=""><parameters/><body>\(body)</body></function>
+        </flowgorithm>
+        """
+        #expect(throws: FPRGError.tooDeeplyNested) { try FPRGReader.read(Data(xml.utf8)) }
+    }
+
     @Test func rejectsOtherXML() {
         #expect(throws: FPRGError.notAFlowchart) { try FPRGReader.read(Data("<html/>".utf8)) }
     }

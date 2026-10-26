@@ -158,8 +158,13 @@ enum Compiler {
                     throw RuntimeError(.invalidName(parameter.name, problem), functionName: function.name)
                 }
             }
+            let key = function.name.lowercased()
+            // Names are case-insensitive: "Sum" and "SUM" would silently replace each other.
+            if result[key] != nil {
+                throw RuntimeError(.duplicateFunction(function.name), functionName: function.name)
+            }
             let body = try compile(function.body, function: function.name)
-            result[function.name.lowercased()] = CompiledFunction(
+            result[key] = CompiledFunction(
                 function: function,
                 parameters: function.parameters.map { Name($0.name) },
                 returnVariable: Name(function.returnVariable.trimmingCharacters(in: .whitespaces)),

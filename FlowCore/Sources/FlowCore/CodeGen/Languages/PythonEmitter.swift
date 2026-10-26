@@ -4,7 +4,7 @@ final class PythonEmitter: Emitter {
     override func emitProgram() {
         var imports: [String] = []
         if uses.contains("turtle") { imports.append("import turtle") }
-        if ["sqrt", "sin", "cos", "tan", "arc", "log", "ln(", "pi"].contains(where: uses.contains) { imports.append("import math") }
+        if ["sqrt", "sin", "cos", "tan", "arc", "log", "ln(", "pi", "mod", "%"].contains(where: uses.contains) { imports.append("import math") }
         if uses.contains("random") { imports.append("import random") }
         imports.forEach(line)
         if !imports.isEmpty { blank() }
@@ -22,8 +22,8 @@ final class PythonEmitter: Emitter {
 
         for function in otherFunctions {
             enter(function)
-            let params = function.parameters.map(\.name).joined(separator: ", ")
-            line("def \(function.name)(\(params)):")
+            let params = function.parameters.map { identifier($0.name) }.joined(separator: ", ")
+            line("def \(functionName(function.name))(\(params)):")
             indented {
                 if function.body.isEmpty && function.returnType == nil { line("pass") }
                 emitBlock(function.body)
@@ -40,6 +40,15 @@ final class PythonEmitter: Emitter {
             if uses.contains("turtle") { line("turtle.done()") }
         }
     }
+
+    static let reserved: Set<String> = [
+        "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
+        "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal",
+        "not", "or", "pass", "raise", "return", "try", "while", "with", "yield",
+        "print", "input", "int", "float", "str", "range", "format", "chr", "ord", "math", "random", "turtle", "file",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
 
     override var piText: String { "math.pi" }
 
@@ -67,6 +76,13 @@ final class PythonEmitter: Emitter {
         case .power: "**"
         default: super.operatorText(op)
         }
+    }
+
+    /// Python's `%` takes the divisor's sign; the flowchart's remainder takes the dividend's, like `math.fmod`.
+    override func binary(_ op: Operator, _ l: Expr, _ r: Expr) -> Rendered {
+        guard op == .modulo else { return super.binary(op, l, r) }
+        let remainder = call("math.fmod", [render(l).text, render(r).text])
+        return isInteger(l) && isInteger(r) ? call("int", [remainder.text]) : remainder
     }
 
     override func concat(_ parts: [Expr]) -> Rendered {
@@ -125,9 +141,9 @@ final class PythonEmitter: Emitter {
     override func emitDeclare(_ s: Statement.Declare) {
         for variable in s.nameList {
             if s.isArray {
-                line("\(variable) = [\(defaultValue(s.type))] * (\(expr(s.size)))")
+                line("\(name(variable)) = [\(defaultValue(s.type))] * (\(expr(s.size)))")
             } else {
-                line("\(variable) = \(defaultValue(s.type))")
+                line("\(name(variable)) = \(defaultValue(s.type))")
             }
         }
     }

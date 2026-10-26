@@ -72,10 +72,20 @@ enum ErrorText {
             return String(localized: "The file is open in the wrong mode for this operation.")
         case .fileError(let name):
             return String(localized: "Can't access the file “\(name)”.")
+        case .fileAccessDenied(let path):
+            return String(localized: "Access to “\(path)” was blocked.")
+        case .notAFile(let name):
+            return String(localized: "“\(name)” isn't a text file: it's a folder or a special file.")
+        case .fileTooLarge(let name):
+            return String(localized: "The file “\(name)” is too large (over 32 MB).")
         case .endOfFile:
             return String(localized: "The end of the file has been reached. Check EOF() before reading.")
         case .incompleteShape:
             return String(localized: "This shape is empty: double-click it to fill it in.")
+        case .outOfMemory:
+            return String(localized: "The program uses too much memory: its arrays or texts are too large.")
+        case .duplicateFunction(let name):
+            return String(localized: "There are two functions called “\(name)”.")
         }
     }
 
@@ -99,6 +109,8 @@ enum ErrorText {
             return String(localized: "“\(word)” is a reserved word.")
         case .notAVariable(let text):
             return String(localized: "“\(text)” isn't a variable name.")
+        case .tooComplex:
+            return String(localized: "This expression is too long or too deeply nested.")
         }
     }
 }

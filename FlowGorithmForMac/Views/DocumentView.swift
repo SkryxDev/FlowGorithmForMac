@@ -109,6 +109,14 @@ struct DocumentView: View {
         .sheet(isPresented: $editor.showsProgramInfo) {
             ProgramInfoSheet(program: $document.program)
         }
+        // Dismissed only through its buttons, which answer the program.
+        .alert(fileAlertTitle, isPresented: Binding(get: { session.fileRequest != nil }, set: { _ in }),
+               presenting: session.fileRequest) { _ in
+            Button("Block", role: .cancel) { session.answerFileAccess(false) }
+            Button("Allow") { session.answerFileAccess(true) }
+        } message: { request in
+            fileAlertMessage(request)
+        }
         .onAppear {
             session.speed = savedSpeed
             session.ignoreBreakpoints = savedIgnoreBreakpoints
@@ -142,6 +150,21 @@ struct DocumentView: View {
     // MARK: Running
 
     var baseDirectory: URL? { fileURL?.deletingLastPathComponent() }
+
+    var fileAlertTitle: Text {
+        switch session.fileRequest?.mode {
+        case .write?: Text("Allow the program to overwrite this file?")
+        case .append?: Text("Allow the program to add lines to this file?")
+        case .read?, nil: Text("Allow the program to read this file?")
+        }
+    }
+
+    func fileAlertMessage(_ request: FileRequest) -> Text {
+        if fileURL == nil {
+            return Text("“\(request.path)”: this flowchart isn't saved yet, so every file needs your permission. Allow only if you trust whoever made it.")
+        }
+        return Text("“\(request.path)” is outside the flowchart's folder. Allow only if you trust whoever made this flowchart.")
+    }
 
     func run() {
         if session.state == .paused {
@@ -237,11 +260,11 @@ struct DocumentView: View {
                 Label(session.state == .paused ? "Continue" : "Run", systemImage: "play.fill")
             }
             .help("Run the program (⌘R, F5)")
-            .disabled(session.state == .running || session.state == .waitingForInput)
+            .disabled(session.state == .running || session.state == .waitingForInput || session.state == .waitingForPermission)
 
             Button("Step", systemImage: "forward.frame.fill", action: step)
                 .help("Run one shape at a time (⌘', F6)")
-                .disabled(session.state == .running || session.state == .waitingForInput)
+                .disabled(session.state == .running || session.state == .waitingForInput || session.state == .waitingForPermission)
 
             Button("Pause", systemImage: "pause.fill") { session.pause() }
                 .help("Pause (⌥⌘P, F7)")
@@ -364,7 +387,7 @@ struct StatusChip: View {
         switch session.state {
         case .idle: .secondary
         case .running: .green
-        case .paused, .waitingForInput: .orange
+        case .paused, .waitingForInput, .waitingForPermission: .orange
         case .finished: .blue
         case .failed: .red
         case .stopped: .gray

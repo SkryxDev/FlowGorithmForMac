@@ -32,8 +32,16 @@ public struct RuntimeError: Error, Hashable, Sendable {
         case fileAlreadyOpen
         case fileWrongMode
         case fileError(String)
+        /// The user refused access to a file outside the flowchart's folder.
+        case fileAccessDenied(String)
+        /// The path names a folder, a device or something else that isn't a plain file.
+        case notAFile(String)
+        case fileTooLarge(String)
         case endOfFile
         case incompleteShape
+        /// Arrays or texts grew past what the interpreter allows.
+        case outOfMemory
+        case duplicateFunction(String)
     }
 
     public var kind: Kind

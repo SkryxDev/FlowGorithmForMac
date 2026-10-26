@@ -27,14 +27,14 @@ final class SwiftEmitter: BraceEmitter {
         for function in otherFunctions {
             enter(function)
             let params = function.parameters.map {
-                $0.isArray ? "_ \($0.name): inout [\(typeName($0.type))]" : "_ \($0.name): \(typeName($0.type))"
+                $0.isArray ? "_ \(identifier($0.name)): inout [\(typeName($0.type))]" : "_ \(identifier($0.name)): \(typeName($0.type))"
             }.joined(separator: ", ")
             let returns = function.returnType.map { " -> \(typeName($0))" } ?? ""
-            line("func \(function.name)(\(params))\(returns) {")
+            line("func \(functionName(function.name))(\(params))\(returns) {")
             indented {
                 // Swift parameters are constants; shadow scalars so the flowchart can change them.
                 for parameter in function.parameters where !parameter.isArray {
-                    untagged { line("var \(parameter.name) = \(parameter.name)") }
+                    untagged { line("var \(identifier(parameter.name)) = \(identifier(parameter.name))") }
                 }
                 emitBlock(function.body)
                 returnLine(function)
@@ -48,8 +48,19 @@ final class SwiftEmitter: BraceEmitter {
         }
     }
 
+    static let reserved: Set<String> = [
+        "associatedtype", "class", "deinit", "enum", "extension", "fileprivate", "func", "import", "init", "inout",
+        "internal", "let", "open", "operator", "private", "precedencegroup", "protocol", "public", "rethrows",
+        "static", "struct", "subscript", "typealias", "var", "break", "case", "catch", "continue", "default",
+        "defer", "do", "else", "fallthrough", "for", "guard", "if", "in", "repeat", "return", "throw", "switch",
+        "where", "while", "Any", "as", "await", "false", "is", "nil", "self", "Self", "super", "throws", "true", "try",
+        "print", "readLine", "pow", "stride", "Double", "String", "Bool", "Character", "Array", "Foundation",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
+
     override func emitDeclare(_ s: Statement.Declare) {
-        for variable in s.nameList {
+        for variable in s.nameList.map({ name($0) }) {
             if s.isArray {
                 line("var \(variable) = [\(typeName(s.type))](repeating: \(defaultValue(s.type)), count: \(expr(s.size)))")
             } else {

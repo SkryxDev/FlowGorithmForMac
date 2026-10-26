@@ -46,33 +46,51 @@ enum ChartExporter {
         let metrics = ChartMetrics(fontSize: fontSize, compact: compact)
         let layout = ChartLayout.make(function, metrics: metrics)
         let view = ExportChart(layout: layout, theme: theme, fontSize: fontSize)
-        switch format {
-        case .png:
-            let renderer = ImageRenderer(content: view)
-            renderer.scale = 3
-            guard let image = renderer.cgImage else { return }
-            let bitmap = NSBitmapImageRep(cgImage: image)
-            try? bitmap.representation(using: .png, properties: [:])?.write(to: url)
-        case .pdf:
-            let renderer = ImageRenderer(content: view)
-            renderer.render { size, draw in
-                var box = CGRect(origin: .zero, size: size)
-                guard let context = CGContext(url as CFURL, mediaBox: &box, nil) else { return }
-                context.beginPDFPage(nil)
-                draw(context)
-                context.endPDFPage()
-                context.closePDF()
+        do {
+            switch format {
+            case .png:
+                let renderer = ImageRenderer(content: view)
+                renderer.scale = 3
+                // A very large chart can't become a single bitmap.
+                guard let image = renderer.cgImage,
+                      let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
+                    return showProblem(String(localized: "The flowchart is too large to export as an image. Try PDF or SVG."))
+                }
+                try data.write(to: url)
+            case .pdf:
+                let renderer = ImageRenderer(content: view)
+                var written = false
+                renderer.render { size, draw in
+                    var box = CGRect(origin: .zero, size: size)
+                    guard let context = CGContext(url as CFURL, mediaBox: &box, nil) else { return }
+                    context.beginPDFPage(nil)
+                    draw(context)
+                    context.endPDFPage()
+                    context.closePDF()
+                    written = true
+                }
+                if !written { throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: url.path]) }
+            case .svg:
+                try SVGWriter.svg(layout, theme: theme, fontSize: fontSize).write(to: url, atomically: true, encoding: .utf8)
             }
-        case .svg:
-            try? SVGWriter.svg(layout, theme: theme, fontSize: fontSize).write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            NSAlert(error: error).runModal()
         }
+    }
+
+    static func showProblem(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = message
+        alert.runModal()
     }
 
     static func print(_ function: Function, theme: Theme, fontSize: Double, compact: Bool) {
         let layout = ChartLayout.make(function, metrics: ChartMetrics(fontSize: fontSize, compact: compact))
         let renderer = ImageRenderer(content: ExportChart(layout: layout, theme: theme, fontSize: fontSize))
         renderer.scale = 2
-        guard let image = renderer.nsImage else { return }
+        guard let image = renderer.nsImage else {
+            return showProblem(String(localized: "The flowchart is too large to print."))
+        }
         let imageView = NSImageView(frame: CGRect(origin: .zero, size: layout.size))
         imageView.image = image
         imageView.imageScaling = .scaleProportionallyDown
@@ -94,7 +112,9 @@ enum SVGWriter {
         }
         func opacity(_ color: Color) -> String { String(format: "%.2f", color.resolve(in: environment).opacity) }
         func escape(_ s: String) -> String {
-            s.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
+            // Control characters aren't allowed in XML at all and would make the file unreadable.
+            String(String.UnicodeScalarView(s.unicodeScalars.filter(FPRGWriter.isAllowedInXML)))
+                .replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
                 .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
         }
         func data(_ path: Path) -> String {

@@ -69,7 +69,7 @@ struct FlowchartView: View {
             }
             .onChange(of: session.state) { _, state in
                 if state.isActive { editor.insertTarget = nil }
-                if state == .paused || state == .waitingForInput || state == .failed {
+                if state == .paused || state == .waitingForInput || state == .waitingForPermission || state == .failed {
                     reveal(session.currentStatement, in: layout, viewport: geo.size)
                 }
             }
@@ -255,6 +255,7 @@ struct FlowchartView: View {
             Button("Program Info…", systemImage: "info.circle") { editor.showsProgramInfo = true }
         } else {
             Button("Edit Function…", systemImage: "function") { editor.editingFunction = function }
+                .disabled(locked)
         }
     }
 

@@ -35,6 +35,8 @@ public final class Interpreter: @unchecked Sendable {
         let function: String
         var slots: [String: Slot] = [:]
         var order: [String] = []
+        /// Array elements declared in this call, released when it returns.
+        var ownedElements = 0
         init(function: String) { self.function = function }
 
         func declare(_ name: Name, _ slot: Slot) throws(RuntimeError) {
@@ -54,12 +56,20 @@ public final class Interpreter: @unchecked Sendable {
         var mode: FileMode
         var lines: [String] = []
         var nextLine = 0
+        /// What the program wrote: the whole file in write mode, only the new lines in append mode.
         var buffer = ""
     }
 
     /// Arrays longer than this are shown truncated in the variable watch, so a big array
     /// isn't copied to the window several times a second.
     static let snapshotElementLimit = 1000
+    /// Array elements alive at once, across every call. Keeps a runaway program from
+    /// taking all the Mac's memory.
+    static let elementLimit = 10_000_000
+    /// The longest text a program can build, in UTF-8 bytes.
+    static let textLimit = 10_000_000
+    /// The largest file the Read shape will load.
+    static let fileSizeLimit = 32 * 1024 * 1024
 
     public let program: Program
     public let controller: ExecutionController
@@ -70,6 +80,9 @@ public final class Interpreter: @unchecked Sendable {
     var frames: [Frame] = []
     var mainFrame: Frame?
     var file: OpenFile?
+    /// Files outside the flowchart's folder the user agreed to, as "mode:path".
+    var allowedFiles: Set<String> = []
+    var allocatedElements = 0
     var turtleX = 0.0, turtleY = 0.0, turtleHeading = 90.0
     var penColor = PenColor.black
     var lastSnapshot = ContinuousClock.now
@@ -92,8 +105,17 @@ public final class Interpreter: @unchecked Sendable {
         }
     }
 
+    /// Runs the program to its end, on a thread of its own (see `InterpreterThread`).
     @concurrent
     public func run() async {
+        let thread = InterpreterThread()
+        await withTaskExecutorPreference(thread) {
+            await self.runProgram()
+        }
+        thread.finish()
+    }
+
+    func runProgram() async {
         defer { controller.finish() }
         do {
             functions = try Compiler.compile(program)
@@ -102,13 +124,13 @@ public final class Interpreter: @unchecked Sendable {
             }
             controller.emit(.turtle(.turtle(position: TurtlePoint(x: 0, y: 0), heading: 90)))
             _ = try await invoke(compiled, arguments: [])
-            try flushFile()
+            try closeFile()
             controller.emit(.finished(snapshot()))
         } catch let error as RuntimeError {
-            try? flushFile()
+            try? closeFile()
             controller.emit(.failed(error, snapshot()))
         } catch {
-            try? flushFile()
+            try? closeFile()
             controller.emit(.stopped(snapshot()))
         }
     }
@@ -173,7 +195,12 @@ public final class Interpreter: @unchecked Sendable {
         frames.append(frame)
         if frames.count == 1 { mainFrame = frame }
         // Main's frame stays visible after the program ends, for the variable watch.
-        defer { if frames.count > 1 || mainFrame !== frame { frames.removeLast() } }
+        defer {
+            if frames.count > 1 || mainFrame !== frame {
+                frames.removeLast()
+                allocatedElements -= frame.ownedElements
+            }
+        }
 
         try await execute(compiled.body, in: frame)
 
@@ -250,7 +277,11 @@ public final class Interpreter: @unchecked Sendable {
             if let sizeExpr {
                 let size = try integer(try await evaluate(sizeExpr, in: frame), context: "Size")
                 guard size >= 0, size <= 1_000_000 else { throw RuntimeError(.invalidArraySize(size)) }
+                let total = Int(size) * names.count
+                guard allocatedElements + total <= Self.elementLimit else { throw RuntimeError(.outOfMemory) }
                 for name in names { try frame.declare(name, .array(ArrayStorage(type: type, count: Int(size)))) }
+                allocatedElements += total
+                frame.ownedElements += total
             } else {
                 for name in names { try frame.declare(name, .scalar(Scalar(type: type))) }
             }
@@ -332,29 +363,16 @@ public final class Interpreter: @unchecked Sendable {
         case .open(let expr, let mode):
             if file != nil { throw RuntimeError(.fileAlreadyOpen) }
             let path = try await evaluate(expr, in: frame).displayString
-            let url = resolve(path)
+            let url = try await authorize(resolve(path), mode: mode, statement: statement.id)
             var open = OpenFile(url: url, mode: mode)
-            switch mode {
-            case .read:
-                do {
-                    let text = try String(contentsOf: url, encoding: .utf8)
-                    var lines = text.components(separatedBy: .newlines)
-                    if lines.last == "" { lines.removeLast() }
-                    open.lines = lines
-                } catch {
-                    throw RuntimeError(.fileError(url.lastPathComponent))
-                }
-            case .append:
-                open.buffer = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-            case .write:
-                break
+            if mode == .read {
+                open.lines = try Interpreter.lines(of: url)
             }
             file = open
 
         case .close:
             guard file != nil else { throw RuntimeError(.fileNotOpen) }
-            try flushFile()
-            file = nil
+            try closeFile()
 
         case .read(let target):
             guard let open = file else { throw RuntimeError(.fileNotOpen) }
@@ -372,10 +390,15 @@ public final class Interpreter: @unchecked Sendable {
             guard file != nil else { throw RuntimeError(.fileNotOpen) }
             guard file?.mode != .read else { throw RuntimeError(.fileWrongMode) }
             let value = try await evaluate(expr, in: frame)
-            file?.buffer += value.displayString + "\n"
+            let line = value.displayString + "\n"
+            if let open = file, open.buffer.utf8.count + line.utf8.count > Self.fileSizeLimit {
+                throw RuntimeError(.fileTooLarge(open.url.lastPathComponent))
+            }
+            file?.buffer += line
 
         case .turn(let expr, let direction):
             let degrees = try number(try await evaluate(expr, in: frame), context: "Turn")
+            guard degrees.isFinite else { throw RuntimeError(.overflow) }
             turtleHeading += direction == .left ? degrees : -degrees
             turtleHeading = turtleHeading.truncatingRemainder(dividingBy: 360)
             emitTurtle()
@@ -384,8 +407,11 @@ public final class Interpreter: @unchecked Sendable {
             let distance = try number(try await evaluate(expr, in: frame), context: "Forward")
             let radians = turtleHeading * .pi / 180
             let from = TurtlePoint(x: turtleX, y: turtleY)
-            turtleX += distance * cos(radians)
-            turtleY += distance * sin(radians)
+            let x = turtleX + distance * cos(radians), y = turtleY + distance * sin(radians)
+            // An infinite move would leave nothing sensible to draw.
+            guard x.isFinite, y.isFinite else { throw RuntimeError(.overflow) }
+            turtleX = x
+            turtleY = y
             let to = TurtlePoint(x: turtleX, y: turtleY)
             controller.emit(.turtle(.line(from: from, to: to, color: penColor, drawn: penDown)))
             emitTurtle()
@@ -414,15 +440,108 @@ public final class Interpreter: @unchecked Sendable {
 
     func resolve(_ path: String) -> URL {
         let expanded = (path as NSString).expandingTildeInPath
-        if expanded.hasPrefix("/") { return URL(fileURLWithPath: expanded) }
+        if expanded.hasPrefix("/") { return URL(fileURLWithPath: expanded).standardizedFileURL }
         let base = baseDirectory ?? FileManager.default.homeDirectoryForCurrentUser
-        return base.appendingPathComponent(expanded)
+        return base.appendingPathComponent(expanded).standardizedFileURL
     }
 
-    func flushFile() throws {
-        guard let open = file, open.mode != .read else { return }
+    /// Files in the flowchart's folder (or below it) open freely. Anything else, including
+    /// every file of a flowchart never saved, needs the user's consent, so a flowchart from
+    /// someone else can't quietly read or overwrite other files. Returns the file's real location.
+    func authorize(_ url: URL, mode: FileMode, statement: Statement.ID) async throws -> URL {
+        let real = try Interpreter.realLocation(of: url)
+        if FileManager.default.fileExists(atPath: real.path) {
+            // Folders, devices and pipes would hang or fail in confusing ways.
+            guard (try? real.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true else {
+                throw RuntimeError(.notAFile(url.lastPathComponent))
+            }
+        } else if mode == .read {
+            throw RuntimeError(.fileError(url.lastPathComponent))
+        }
+        if let base = baseDirectory {
+            let folder = try Interpreter.realLocation(of: base)
+            if Interpreter.isInside(real, folder: folder) { return real }
+        }
+        let key = "\(mode.rawValue):\(real.path)"
+        if !allowedFiles.contains(key) {
+            guard try await controller.requestFileAccess(path: real.path, mode: mode, statement: statement) else {
+                throw RuntimeError(.fileAccessDenied(real.path))
+            }
+            allowedFiles.insert(key)
+        }
+        return real
+    }
+
+    /// The path with `..` and symbolic links resolved, so a link next to the flowchart
+    /// that points elsewhere counts as elsewhere.
+    static func realLocation(of url: URL) throws(RuntimeError) -> URL {
+        let url = url.standardizedFileURL
+        if FileManager.default.fileExists(atPath: url.path) { return url.resolvingSymlinksInPath() }
+        // A link to nowhere: writing through it would create a file who knows where.
+        if (try? FileManager.default.destinationOfSymbolicLink(atPath: url.path)) != nil {
+            throw RuntimeError(.notAFile(url.lastPathComponent))
+        }
+        // A file still to be created: only its folder can be resolved.
+        return url.deletingLastPathComponent().resolvingSymlinksInPath().appendingPathComponent(url.lastPathComponent)
+    }
+
+    static func isInside(_ url: URL, folder: URL) -> Bool {
+        let path = url.pathComponents, base = folder.pathComponents
+        return path.count > base.count && Array(path.prefix(base.count)) == base
+    }
+
+    /// Reads a text file as lines. Accepts UTF-8, UTF-16 with a byte order mark and the
+    /// Windows encoding older files use, with any kind of line ending.
+    static func lines(of url: URL) throws(RuntimeError) -> [String] {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        guard size <= fileSizeLimit else { throw RuntimeError(.fileTooLarge(url.lastPathComponent)) }
+        let data: Data
         do {
-            try open.buffer.write(to: open.url, atomically: true, encoding: .utf8)
+            data = try Data(contentsOf: url)
+        } catch {
+            throw RuntimeError(.fileError(url.lastPathComponent))
+        }
+        var text: String
+        if data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF]), let utf16 = String(data: data, encoding: .utf16) {
+            text = utf16
+        } else {
+            text = String(data: data, encoding: .utf8)
+                ?? String(data: data, encoding: .windowsCP1252)
+                ?? String(decoding: data, as: UTF8.self)
+        }
+        if text.unicodeScalars.first == "\u{FEFF}" { text.unicodeScalars.removeFirst() }
+        var lines = text.replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .components(separatedBy: "\n")
+        if lines.last == "" { lines.removeLast() }
+        return lines
+    }
+
+    /// Saves what the program wrote and forgets the open file; calling it again does nothing.
+    /// Append mode adds to the end of the file instead of rewriting it, so existing content
+    /// survives even if it isn't valid UTF-8.
+    func closeFile() throws(RuntimeError) {
+        guard let open = file else { return }
+        file = nil
+        guard open.mode != .read else { return }
+        let data = Data(open.buffer.utf8)
+        do {
+            if open.mode == .append, FileManager.default.fileExists(atPath: open.url.path) {
+                guard !data.isEmpty else { return }
+                let handle = try FileHandle(forUpdating: open.url)
+                defer { try? handle.close() }
+                let end = try handle.seekToEnd()
+                var addition = data
+                if end > 0 {
+                    // Start on a new line if the file doesn't end with one.
+                    try handle.seek(toOffset: end - 1)
+                    if try handle.read(upToCount: 1) != Data("\n".utf8) { addition = Data("\n".utf8) + data }
+                    _ = try handle.seekToEnd()
+                }
+                try handle.write(contentsOf: addition)
+            } else {
+                try data.write(to: open.url, options: .atomic)
+            }
         } catch {
             throw RuntimeError(.fileError(open.url.lastPathComponent))
         }
@@ -637,7 +756,9 @@ public final class Interpreter: @unchecked Sendable {
 
         switch op {
         case .concat:
-            return .string(l.displayString + r.displayString)
+            let a = l.displayString, b = r.displayString
+            guard a.utf8.count + b.utf8.count <= textLimit else { throw RuntimeError(.outOfMemory) }
+            return .string(a + b)
 
         case .plus, .minus, .times:
             if case .integer(let a) = l, case .integer(let b) = r {

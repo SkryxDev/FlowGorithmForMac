@@ -238,13 +238,22 @@ class Emitter {
         return symbols[lvalue.name.lowercased()]?.type ?? .string
     }
 
+    /// Words the target language reserves, and names the generated code uses itself.
+    var reservedNames: Set<String> { [] }
+
+    /// A flowchart name that is a keyword here (`class` in Java, say) gets a trailing underscore.
+    /// Flowchart names can't contain underscores, so the result never collides with another name.
+    func identifier(_ raw: String) -> String {
+        reservedNames.contains(raw) ? raw + "_" : raw
+    }
+
     /// The declared spelling of a variable (identifiers are case-insensitive in flowcharts, not in most languages).
     func name(_ raw: String) -> String {
-        spellings[raw.lowercased()] ?? raw
+        identifier(spellings[raw.lowercased()] ?? raw)
     }
 
     func functionName(_ raw: String) -> String {
-        program.function(named: raw)?.name ?? raw
+        identifier(program.function(named: raw)?.name ?? raw)
     }
 
     func type(of expr: Expr) -> DataType? {
@@ -447,7 +456,7 @@ class Emitter {
         }
         // Imports depend on which built-in functions appear, so look through every expression once.
         let allText = program.functions.flatMap(\.body.flattened).map(\.expressionText).joined(separator: " ").lowercased()
-        for name in ["random", "sqrt", "sin", "cos", "tan", "arc", "log", "ln(", "pi", "^", "tofixed", "eof", "abs", "int(", "sgn"] where allText.contains(name) {
+        for name in ["random", "sqrt", "sin", "cos", "tan", "arc", "log", "ln(", "pi", "^", "tofixed", "eof", "abs", "int(", "sgn", "mod", "%"] where allText.contains(name) {
             uses.insert(name)
         }
         if allText.contains("π") { uses.insert("pi") }

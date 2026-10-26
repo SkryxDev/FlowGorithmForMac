@@ -112,10 +112,10 @@ final class JavaEmitter: BraceEmitter {
             for function in otherFunctions {
                 blank()
                 enter(function)
-                let params = function.parameters.map { "\(typeName($0.type))\($0.isArray ? "[]" : "") \($0.name)" }.joined(separator: ", ")
+                let params = function.parameters.map { "\(typeName($0.type))\($0.isArray ? "[]" : "") \(identifier($0.name))" }.joined(separator: ", ")
                 let returns = function.returnType.map(typeName) ?? "void"
                 let throwsClause = uses.contains("file") ? " throws IOException" : ""
-                line("public static \(returns) \(function.name)(\(params))\(throwsClause) {")
+                line("public static \(returns) \(functionName(function.name))(\(params))\(throwsClause) {")
                 indented {
                     emitBlock(function.body)
                     returnLine(function)
@@ -126,13 +126,30 @@ final class JavaEmitter: BraceEmitter {
         line("}")
     }
 
+    static let reserved: Set<String> = [
+        "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue",
+        "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if",
+        "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private",
+        "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this",
+        "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false", "null", "var", "record",
+        "yield", "sealed", "permits",
+        "input", "file", "args", "Main", "Math", "String", "System", "Scanner", "Integer", "Double",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
+
+    /// Java decodes `\u` escapes even inside comments, so `\u000a` would end one early.
+    override func emitComment(_ text: String) {
+        super.emitComment(text.replacingOccurrences(of: "\\u", with: "\\ u"))
+    }
+
     override func emitDeclare(_ s: Statement.Declare) {
         if s.isArray {
             for variable in s.nameList {
-                line("\(typeName(s.type))[] \(variable) = new \(typeName(s.type))[\(expr(s.size))];")
+                line("\(typeName(s.type))[] \(name(variable)) = new \(typeName(s.type))[\(expr(s.size))];")
             }
         } else {
-            line("\(typeName(s.type)) \(s.nameList.joined(separator: ", "));")
+            line("\(typeName(s.type)) \(s.nameList.map { name($0) }.joined(separator: ", "));")
         }
     }
 
@@ -251,9 +268,9 @@ final class CSharpEmitter: BraceEmitter {
             for function in otherFunctions {
                 blank()
                 enter(function)
-                let params = function.parameters.map { "\(typeName($0.type))\($0.isArray ? "[]" : "") \($0.name)" }.joined(separator: ", ")
+                let params = function.parameters.map { "\(typeName($0.type))\($0.isArray ? "[]" : "") \(identifier($0.name))" }.joined(separator: ", ")
                 let returns = function.returnType.map(typeName) ?? "void"
-                line("public static \(returns) \(function.name)(\(params))")
+                line("public static \(returns) \(functionName(function.name))(\(params))")
                 line("{")
                 indented {
                     emitBlock(function.body)
@@ -265,13 +282,26 @@ final class CSharpEmitter: BraceEmitter {
         line("}")
     }
 
+    static let reserved: Set<String> = [
+        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const",
+        "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
+        "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface",
+        "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override",
+        "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof",
+        "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint",
+        "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while",
+        "random", "file", "Main", "Math", "Console", "Program", "Random",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
+
     override func emitDeclare(_ s: Statement.Declare) {
         if s.isArray {
             for variable in s.nameList {
-                line("\(typeName(s.type))[] \(variable) = new \(typeName(s.type))[\(expr(s.size))];")
+                line("\(typeName(s.type))[] \(name(variable)) = new \(typeName(s.type))[\(expr(s.size))];")
             }
         } else {
-            line("\(typeName(s.type)) \(s.nameList.joined(separator: ", "));")
+            line("\(typeName(s.type)) \(s.nameList.map { name($0) }.joined(separator: ", "));")
         }
     }
 
@@ -363,11 +393,27 @@ final class CppEmitter: BraceEmitter {
         }
     }
 
+    static let reserved: Set<String> = [
+        "alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case", "catch",
+        "char", "char8_t", "char16_t", "char32_t", "class", "compl", "concept", "const", "consteval", "constexpr",
+        "constinit", "const_cast", "continue", "co_await", "co_return", "co_yield", "decltype", "default", "delete",
+        "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", "float", "for",
+        "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "noexcept", "not", "not_eq",
+        "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register", "reinterpret_cast",
+        "requires", "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct",
+        "switch", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename",
+        "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq",
+        "main", "file", "std", "string", "vector", "cin", "cout", "endl", "toFixed", "pow", "fmod", "fabs", "rand",
+        "stoi", "stod",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
+
     func signature(_ function: Function) -> String {
         let params = function.parameters.map {
-            $0.isArray ? "vector<\(typeName($0.type))>& \($0.name)" : "\(typeName($0.type)) \($0.name)"
+            $0.isArray ? "vector<\(typeName($0.type))>& \(identifier($0.name))" : "\(typeName($0.type)) \(identifier($0.name))"
         }.joined(separator: ", ")
-        return "\(function.returnType.map(typeName) ?? "void") \(function.name)(\(params))"
+        return "\(function.returnType.map(typeName) ?? "void") \(functionName(function.name))(\(params))"
     }
 
     override func emitProgram() {
@@ -423,10 +469,10 @@ final class CppEmitter: BraceEmitter {
     override func emitDeclare(_ s: Statement.Declare) {
         if s.isArray {
             for variable in s.nameList {
-                line("vector<\(typeName(s.type))> \(variable)(\(expr(s.size)));")
+                line("vector<\(typeName(s.type))> \(name(variable))(\(expr(s.size)));")
             }
         } else {
-            line("\(typeName(s.type)) \(s.nameList.joined(separator: ", "));")
+            line("\(typeName(s.type)) \(s.nameList.map { name($0) }.joined(separator: ", "));")
         }
     }
 
@@ -548,10 +594,11 @@ final class JavaScriptEmitter: BraceEmitter {
         for function in otherFunctions {
             blank()
             enter(function)
-            let params = function.parameters.map { typed ? "\($0.name): \(typeName($0.type))\($0.isArray ? "[]" : "")" : $0.name }
-                .joined(separator: ", ")
+            let params = function.parameters.map {
+                typed ? "\(identifier($0.name)): \(typeName($0.type))\($0.isArray ? "[]" : "")" : identifier($0.name)
+            }.joined(separator: ", ")
             let returns = typed ? ": \(function.returnType.map(typeName) ?? "void")" : ""
-            line("function \(function.name)(\(params))\(returns) {")
+            line("function \(functionName(function.name))(\(params))\(returns) {")
             indented {
                 emitBlock(function.body)
                 returnLine(function)
@@ -560,8 +607,19 @@ final class JavaScriptEmitter: BraceEmitter {
         }
     }
 
+    static let reserved: Set<String> = [
+        "await", "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do",
+        "else", "enum", "export", "extends", "false", "finally", "for", "function", "if", "implements", "import",
+        "in", "instanceof", "interface", "let", "new", "null", "package", "private", "protected", "public",
+        "return", "static", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while",
+        "with", "yield", "arguments", "eval", "undefined", "NaN", "Infinity",
+        "prompt", "console", "process", "Math", "String", "Array", "parseInt", "parseFloat",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
+
     override func emitDeclare(_ s: Statement.Declare) {
-        for variable in s.nameList {
+        for variable in s.nameList.map({ name($0) }) {
             if s.isArray {
                 let annotation = typed ? ": \(typeName(s.type))[]" : ""
                 line("let \(variable)\(annotation) = new Array(\(expr(s.size)));")
@@ -670,14 +728,14 @@ final class KotlinEmitter: BraceEmitter {
         for function in otherFunctions {
             blank()
             enter(function)
-            let params = function.parameters.map { "\($0.name): \($0.isArray ? arrayType($0.type) : typeName($0.type))" }
+            let params = function.parameters.map { "\(identifier($0.name)): \($0.isArray ? arrayType($0.type) : typeName($0.type))" }
                 .joined(separator: ", ")
             let returns = function.returnType.map { ": \(typeName($0))" } ?? ""
-            line("fun \(function.name)(\(params))\(returns) {")
+            line("fun \(functionName(function.name))(\(params))\(returns) {")
             indented {
                 // Kotlin parameters are read-only; copy scalars so the flowchart can change them.
                 for parameter in function.parameters where !parameter.isArray {
-                    untagged { line("var \(parameter.name) = \(parameter.name)") }
+                    untagged { line("var \(identifier(parameter.name)) = \(identifier(parameter.name))") }
                 }
                 emitBlock(function.body)
                 returnLine(function)
@@ -686,8 +744,22 @@ final class KotlinEmitter: BraceEmitter {
         }
     }
 
+    static let reserved: Set<String> = [
+        "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in", "interface", "is",
+        "null", "object", "package", "return", "super", "this", "throw", "true", "try", "typealias", "typeof",
+        "val", "var", "when", "while",
+        "main", "file", "print", "println", "readln", "File", "PI",
+    ]
+
+    override var reservedNames: Set<String> { Self.reserved }
+
+    /// `$` starts a string template in Kotlin.
+    override func stringLiteral(_ s: String) -> String {
+        super.stringLiteral(s).replacingOccurrences(of: "$", with: "\\$")
+    }
+
     override func emitDeclare(_ s: Statement.Declare) {
-        for variable in s.nameList {
+        for variable in s.nameList.map({ name($0) }) {
             if s.isArray {
                 let size = expr(s.size)
                 line(s.type == .string ? "val \(variable) = Array(\(size)) { \"\" }" : "val \(variable) = \(arrayType(s.type))(\(size))")

@@ -82,6 +82,31 @@ struct ExpressionTests {
         #expect(throws: ExpressionError.self) { try ExpressionParser.parseLValue("1 + x") }
     }
 
+    func problem(_ source: String) -> ExpressionError.Kind? {
+        do {
+            _ = try ExpressionParser.parse(source)
+            return nil
+        } catch {
+            return error.kind
+        }
+    }
+
+    /// Deep expressions are refused instead of exhausting the stack.
+    @Test func deepExpressionsAreRefused() {
+        let deep = 100_000
+        #expect(problem(String(repeating: "(", count: deep) + "1" + String(repeating: ")", count: deep)) == .tooComplex)
+        #expect(problem(String(repeating: "-", count: deep) + "1") == .tooComplex)
+        #expect(problem("1" + String(repeating: " + 1", count: deep)) == .tooComplex)
+        #expect(problem("2" + String(repeating: " ^ 2", count: deep)) == .tooComplex)
+        #expect(problem("Abs(" + String(repeating: "Abs(", count: deep) + "1" + String(repeating: ")", count: deep + 1)) == .tooComplex)
+    }
+
+    @Test func ordinaryExpressionsStayWithinTheLimits() async {
+        let nested = String(repeating: "(", count: 30) + "1" + String(repeating: ")", count: 30)
+        #expect(await evaluate(nested) == "1")
+        #expect(await evaluate("0" + String(repeating: " + 1", count: 200)) == "200")
+    }
+
     @Test func validatesIdentifiers() {
         #expect(Identifier.validate("noun2") == nil)
         #expect(Identifier.validate("2noun") == .invalidCharacters)

@@ -2,7 +2,8 @@ import FlowCore
 import SwiftUI
 
 /// Keys and defaults for user preferences, read with @AppStorage.
-enum SettingsKey {
+/// Nonisolated so documents, which are created off the main actor, can read them too.
+nonisolated enum SettingsKey {
     static let theme = "theme"
     static let fontSize = "chartFontSize"
     static let showGrid = "showGrid"
@@ -19,6 +20,8 @@ enum SettingsKey {
     static let showsBottomPanel = "ui.showsBottomPanel"
     static let zoom = "ui.zoom"
     static let ignoreBreakpoints = "ignoreBreakpoints"
+    /// Whether new flowcharts get the Mac account's full name as author. On by default, as in Flowgorithm.
+    static let fillAuthor = "fillAuthorName"
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable {

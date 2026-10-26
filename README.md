@@ -16,6 +16,14 @@ A native macOS app (26 Tahoe and later) for writing and running programs as flow
 - **Export** to PNG, PDF and SVG, and printing.
 - **Italian and English**, following the system language or chosen in Settings.
 
+## Safe with flowcharts from others
+
+A `.fprg` file can come from anyone, so running one can't harm the Mac:
+
+- Programs read and write files in the flowchart's folder freely. For any other file (another folder, `..`, `~`, a link pointing elsewhere, or every file of a flowchart not saved yet) the app shows the full path and asks first. Folders, devices and files over 32 MB are refused.
+- Opening a file never loads external XML entities, and absurdly deep shapes or expressions are refused with a clear error instead of crashing the app.
+- Arrays and texts have a memory limit, and the console stays responsive even when a program prints without end.
+
 ## Building
 
 You need Xcode 26 or later. Open `FlowGorithmForMac.xcodeproj` and run, or from the terminal:
@@ -24,7 +32,7 @@ You need Xcode 26 or later. Open `FlowGorithmForMac.xcodeproj` and run, or from 
 xcodebuild -project FlowGorithmForMac.xcodeproj -scheme FlowGorithmForMac -configuration Release -derivedDataPath build/DerivedData build
 ```
 
-The app lands in `build/DerivedData/Build/Products/Release/FlowGorithmForMac.app`.
+The app lands in `build/DerivedData/Build/Products/Release/FlowGorithmForMac.app`. To package it, run `Scripts/make-dmg.sh <version>`: it writes `dist/FlowGorithmForMac-<version>.dmg` and prints its SHA-256. With a Developer ID, set `SIGN_IDENTITY` and `NOTARY_PROFILE` to sign and notarize the image (see the script).
 
 ## Project layout
 

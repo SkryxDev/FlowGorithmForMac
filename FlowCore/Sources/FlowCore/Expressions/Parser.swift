@@ -86,8 +86,20 @@ public enum ExpressionParser {
 }
 
 struct Parser {
+    /// Parsing, checking and running an expression all recurse, so very deep expressions are
+    /// refused: a crafted file could otherwise exhaust the stack and crash the app.
+    /// `maxNesting` counts open parentheses, arguments, signs and powers; `maxHeight` is the
+    /// height of the finished tree (`1 + 1 + 1 + …` is flat to parse but tall to evaluate).
+    /// 32 is far beyond any real expression and keeps the parser within a 512 KB thread stack
+    /// even in debug builds, where each level costs several kilobytes.
+    static let maxNesting = 32
+    static let maxHeight = 256
+
     var tokens: [Token]
     var position = 0
+    var nesting = 0
+    /// The height of the tree the last parse function returned.
+    var height = 0
 
     init(_ source: String) throws(ExpressionError) {
         tokens = try Lexer.tokenize(source)
@@ -110,7 +122,30 @@ struct Parser {
         guard peek.kind == .end else { throw ExpressionError(.unexpected(describe(peek)), offset: peek.offset) }
     }
 
-    mutating func parseExpression() throws(ExpressionError) -> Expr { try parseOr() }
+    /// Called before descending another level; pair it with `defer { nesting -= 1 }`.
+    mutating func enter() throws(ExpressionError) {
+        nesting += 1
+        if nesting > Parser.maxNesting { throw ExpressionError(.tooComplex, offset: peek.offset) }
+    }
+
+    /// A literal or a plain variable.
+    mutating func leaf(_ expr: Expr) -> Expr {
+        height = 1
+        return expr
+    }
+
+    /// A node whose tallest child is `child` high.
+    mutating func node(_ expr: Expr, over child: Int) throws(ExpressionError) -> Expr {
+        height = child + 1
+        if height > Parser.maxHeight { throw ExpressionError(.tooComplex, offset: peek.offset) }
+        return expr
+    }
+
+    mutating func parseExpression() throws(ExpressionError) -> Expr {
+        try enter()
+        defer { nesting -= 1 }
+        return try parseOr()
+    }
 
     mutating func matchOperator(_ ops: Set<Operator>) -> Operator? {
         if case .op(let op) = peek.kind, ops.contains(op) {
@@ -123,7 +158,9 @@ struct Parser {
     mutating func parseOr() throws(ExpressionError) -> Expr {
         var lhs = try parseAnd()
         while matchOperator([.or]) != nil {
-            lhs = .binary(.or, lhs, try parseAnd())
+            let left = height
+            let rhs = try parseAnd()
+            lhs = try node(.binary(.or, lhs, rhs), over: max(left, height))
         }
         return lhs
     }
@@ -131,7 +168,9 @@ struct Parser {
     mutating func parseAnd() throws(ExpressionError) -> Expr {
         var lhs = try parseRelational()
         while matchOperator([.and]) != nil {
-            lhs = .binary(.and, lhs, try parseRelational())
+            let left = height
+            let rhs = try parseRelational()
+            lhs = try node(.binary(.and, lhs, rhs), over: max(left, height))
         }
         return lhs
     }
@@ -139,7 +178,9 @@ struct Parser {
     mutating func parseRelational() throws(ExpressionError) -> Expr {
         var lhs = try parseConcat()
         while let op = matchOperator([.equal, .notEqual, .less, .lessEqual, .greater, .greaterEqual]) {
-            lhs = .binary(op, lhs, try parseConcat())
+            let left = height
+            let rhs = try parseConcat()
+            lhs = try node(.binary(op, lhs, rhs), over: max(left, height))
         }
         return lhs
     }
@@ -147,7 +188,9 @@ struct Parser {
     mutating func parseConcat() throws(ExpressionError) -> Expr {
         var lhs = try parseAdditive()
         while matchOperator([.concat]) != nil {
-            lhs = .binary(.concat, lhs, try parseAdditive())
+            let left = height
+            let rhs = try parseAdditive()
+            lhs = try node(.binary(.concat, lhs, rhs), over: max(left, height))
         }
         return lhs
     }
@@ -155,7 +198,9 @@ struct Parser {
     mutating func parseAdditive() throws(ExpressionError) -> Expr {
         var lhs = try parseMultiplicative()
         while let op = matchOperator([.plus, .minus]) {
-            lhs = .binary(op, lhs, try parseMultiplicative())
+            let left = height
+            let rhs = try parseMultiplicative()
+            lhs = try node(.binary(op, lhs, rhs), over: max(left, height))
         }
         return lhs
     }
@@ -163,73 +208,110 @@ struct Parser {
     mutating func parseMultiplicative() throws(ExpressionError) -> Expr {
         var lhs = try parsePower()
         while let op = matchOperator([.times, .divide, .modulo]) {
-            lhs = .binary(op, lhs, try parsePower())
+            let left = height
+            let rhs = try parsePower()
+            lhs = try node(.binary(op, lhs, rhs), over: max(left, height))
         }
         return lhs
     }
 
     mutating func parsePower() throws(ExpressionError) -> Expr {
         let base = try parseUnary()
+        let left = height
         if matchOperator([.power]) != nil {
             // Right-associative, as in mathematics: 2 ^ 3 ^ 2 = 2 ^ 9.
-            return .binary(.power, base, try parsePower())
+            try enter()
+            defer { nesting -= 1 }
+            let exponent = try parsePower()
+            return try node(.binary(.power, base, exponent), over: max(left, height))
         }
         return base
     }
 
     mutating func parseUnary() throws(ExpressionError) -> Expr {
         if let op = matchOperator([.minus, .not, .plus]) {
+            try enter()
+            defer { nesting -= 1 }
             let operand = try parseUnary()
-            return op == .plus ? operand : .unary(op, operand)
+            if op == .plus { return operand }
+            return try node(.unary(op, operand), over: height)
         }
         return try parsePrimary()
     }
 
+    /// Only dispatches: each kind of operand has its own function, so the frames on the
+    /// recursive path (parentheses, arguments, indexes) stay small even in debug builds.
     mutating func parsePrimary() throws(ExpressionError) -> Expr {
+        switch peek.kind {
+        case .leftParen: try parseGroup()
+        case .identifier: try parseName()
+        default: try parseLiteral()
+        }
+    }
+
+    @inline(never)
+    mutating func parseGroup() throws(ExpressionError) -> Expr {
+        advance()
+        let inner = try parseExpression()
+        try expect(.rightParen, ")")
+        return try node(.group(inner), over: height)
+    }
+
+    /// A variable, a constant, an array element or a function call.
+    @inline(never)
+    mutating func parseName() throws(ExpressionError) -> Expr {
+        guard case .identifier(let name) = peek.kind else { return try parseLiteral() }
+        advance()
+        switch name.lowercased() {
+        case "true": return leaf(.boolean(true))
+        case "false": return leaf(.boolean(false))
+        case "pi": return leaf(.pi)
+        default: break
+        }
+        if peek.kind == .leftParen { return try parseCall(name) }
+        if peek.kind == .leftBracket { return try parseElement(name) }
+        return leaf(.variable(name))
+    }
+
+    @inline(never)
+    mutating func parseCall(_ name: String) throws(ExpressionError) -> Expr {
+        advance()
+        var arguments: [Expr] = []
+        var tallest = 0
+        if peek.kind != .rightParen {
+            arguments.append(try parseExpression())
+            tallest = height
+            while peek.kind == .comma {
+                advance()
+                arguments.append(try parseExpression())
+                tallest = max(tallest, height)
+            }
+        }
+        try expect(.rightParen, ")")
+        return try node(.call(name, arguments: arguments), over: tallest)
+    }
+
+    @inline(never)
+    mutating func parseElement(_ name: String) throws(ExpressionError) -> Expr {
+        advance()
+        let index = try parseExpression()
+        try expect(.rightBracket, "]")
+        return try node(.element(name, index: index), over: height)
+    }
+
+    @inline(never)
+    mutating func parseLiteral() throws(ExpressionError) -> Expr {
         let token = peek
         switch token.kind {
         case .integer(let value):
             advance()
-            return .integer(value)
+            return leaf(.integer(value))
         case .real(let value):
             advance()
-            return .real(value)
+            return leaf(.real(value))
         case .string(let value):
             advance()
-            return .string(value)
-        case .leftParen:
-            advance()
-            let inner = try parseExpression()
-            try expect(.rightParen, ")")
-            return .group(inner)
-        case .identifier(let name):
-            advance()
-            switch name.lowercased() {
-            case "true": return .boolean(true)
-            case "false": return .boolean(false)
-            case "pi": return .pi
-            default: break
-            }
-            if peek.kind == .leftParen {
-                advance()
-                var arguments: [Expr] = []
-                if peek.kind != .rightParen {
-                    arguments.append(try parseExpression())
-                    while peek.kind == .comma {
-                        advance()
-                        arguments.append(try parseExpression())
-                    }
-                }
-                try expect(.rightParen, ")")
-                return .call(name, arguments: arguments)
-            }
-            if peek.kind == .leftBracket {
-                advance()
-                let index = try parseExpression()
-                try expect(.rightBracket, "]")
-                return .element(name, index: index)
-            }
-            return .variable(name)
+            return leaf(.string(value))
         case .end:
             throw ExpressionError(.unexpected("end"), offset: token.offset)
         default:

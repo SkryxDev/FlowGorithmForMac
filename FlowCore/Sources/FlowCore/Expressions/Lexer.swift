@@ -34,6 +34,8 @@ public struct ExpressionError: Error, Hashable, Sendable {
         case expected(String, found: String)
         case reservedWord(String)
         case notAVariable(String)
+        /// Nested or chained too deeply to evaluate safely.
+        case tooComplex
     }
 
     public var kind: Kind

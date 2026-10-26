@@ -75,7 +75,11 @@ struct SourceCodeView: View {
         panel.nameFieldStringValue = (program.name.isEmpty ? "Program" : program.name) + "." + language.fileExtension
         if let type = UTType(filenameExtension: language.fileExtension) { panel.allowedContentTypes = [type] }
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        try? source.text.write(to: url, atomically: true, encoding: .utf8)
+        do {
+            try source.text.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            NSAlert(error: error).runModal()
+        }
     }
 }
 
