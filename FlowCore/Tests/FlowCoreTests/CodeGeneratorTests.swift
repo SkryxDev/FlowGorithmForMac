@@ -65,6 +65,12 @@ struct CodeGeneratorTests {
         """)
     }
 
+    @Test func pythonImportsMathForThePiSymbol() {
+        let text = CodeGenerator.generate(program([output("π * 2")]), language: .python).text
+        #expect(text.hasPrefix("import math"))
+        #expect(text.contains("print(math.pi * 2)"))
+    }
+
     @Test func javaComparesStringsWithEquals() {
         let p = program([declare("a, b", .string), assign("a", "\"x\""), assign("b", "a"),
                          Statement(.if(.init(expression: "a = b", thenBody: [output("1 / 2")])))])

@@ -21,6 +21,8 @@ struct ChartNode: Identifiable {
     var label: String
     var frame: CGRect
     var incomplete: Bool
+    /// Why the shape can't run as written, shown as its tooltip.
+    var problem: String? = nil
 }
 
 struct ChartEdge: Hashable {
@@ -56,7 +58,19 @@ struct ChartMetrics {
     var dotRadius: CGFloat { 5 * fontSize / 13 }
     var margin: CGFloat { 40 }
 
+    /// Measuring text is the slowest part of a layout; labels repeat, so sizes are remembered.
+    private static var measured: [String: CGSize] = [:]
+
     func measure(_ text: String) -> CGSize {
+        let key = "\(fontSize)|\(text)"
+        if let size = Self.measured[key] { return size }
+        if Self.measured.count > 4000 { Self.measured.removeAll(keepingCapacity: true) }
+        let size = rawMeasure(text)
+        Self.measured[key] = size
+        return size
+    }
+
+    private func rawMeasure(_ text: String) -> CGSize {
         let string = text.isEmpty ? " " : text
         let rect = (string as NSString).boundingRect(
             with: CGSize(width: maxTextWidth, height: .greatestFiniteMagnitude),
@@ -68,6 +82,8 @@ struct ChartMetrics {
 
 /// The geometry of one function's flowchart: shapes, connectors, labels and insertion points.
 struct ChartLayout {
+    /// Changes whenever the layout is rebuilt, so views can skip redrawing an unchanged chart.
+    var revision = 0
     var nodes: [ChartNode] = []
     var edges: [ChartEdge] = []
     var texts: [ChartText] = []
@@ -198,7 +214,8 @@ struct ChartLayout {
             ChartNode(id: statement.id.uuidString, role: .statement, statement: statement, shape: shape(of: statement),
                       category: statement.category, label: ShapeText.label(statement),
                       frame: CGRect(x: -size.width / 2, y: y, width: size.width, height: size.height),
-                      incomplete: statement.isIncomplete)
+                      incomplete: statement.isIncomplete,
+                      problem: statement.validationError.map(ErrorText.message))
         }
 
         func size(for statement: Statement) -> CGSize {

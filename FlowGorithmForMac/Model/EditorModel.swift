@@ -43,6 +43,21 @@ final class EditorModel {
     var showsBottomPanel = true
     var lastError: String?
 
+    // The layout of the shown function, rebuilt only when the function or the metrics change.
+    @ObservationIgnored private var cachedLayout: (function: Function, fontSize: CGFloat, compact: Bool, layout: ChartLayout)?
+    @ObservationIgnored private var layoutRevision = 0
+
+    func layout(for function: Function, metrics: ChartMetrics) -> ChartLayout {
+        if let cached = cachedLayout, cached.fontSize == metrics.fontSize, cached.compact == metrics.compact, cached.function == function {
+            return cached.layout
+        }
+        layoutRevision += 1
+        var layout = ChartLayout.make(function, metrics: metrics)
+        layout.revision = layoutRevision
+        cachedLayout = (function, metrics.fontSize, metrics.compact, layout)
+        return layout
+    }
+
     static let minZoom: CGFloat = 0.3
     static let maxZoom: CGFloat = 3
 
@@ -114,10 +129,12 @@ final class EditorModel {
         let board = NSPasteboard.general
         board.clearContents()
         board.setString(fragment, forType: Self.pasteboardType)
-        board.setString(CodeGenerator.generate(Program(functions: [Function(name: "Main", body: [statement])]),
-                                               language: .pseudocodeEnglish).lines
-                            .filter { $0.statementID != nil }.map(\.text).joined(separator: "\n"),
-                        forType: .string)
+        // Plain text for other apps: the shape as pseudocode, without the function's indentation.
+        let lines = CodeGenerator.generate(Program(functions: [Function(name: "Main", body: [statement])]),
+                                           language: .pseudocodeEnglish).lines
+            .filter { $0.statementID != nil }.map(\.text)
+        let indent = lines.map { $0.prefix(while: { $0 == " " }).count }.min() ?? 0
+        board.setString(lines.map { String($0.dropFirst(indent)) }.joined(separator: "\n"), forType: .string)
     }
 
     func cut(_ id: Statement.ID, in program: Binding<Program>) {

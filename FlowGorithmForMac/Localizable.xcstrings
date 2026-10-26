@@ -464,6 +464,16 @@
         }
       }
     },
+    "Clear Console": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulisci console"
+          }
+        }
+      }
+    },
     "Close": {
       "localizations": {
         "it": {
@@ -580,6 +590,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copia"
+          }
+        }
+      }
+    },
+    "Copy All": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia tutto"
+          }
+        }
+      }
+    },
+    "Copy Line": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copia riga"
           }
         }
       }
@@ -983,6 +1013,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Terminato"
+          }
+        }
+      }
+    },
+    "Fit Drawing": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adatta il disegno"
           }
         }
       }
@@ -2563,6 +2603,16 @@
         }
       }
     },
+    "Two Panels": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Due pannelli"
+          }
+        }
+      }
+    },
     "Two parameters are called “%@”.": {
       "localizations": {
         "it": {
@@ -2981,6 +3031,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "“%1$@” richiede %2$lld argomenti, ma ne ha ricevuti %3$lld."
+          }
+        }
+      }
+    },
+    "…and %lld more": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "…e altri %lld"
           }
         }
       }

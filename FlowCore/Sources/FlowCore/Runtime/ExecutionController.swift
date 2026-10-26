@@ -57,14 +57,17 @@ public struct VariablesSnapshot: Sendable, Hashable {
         public var type: DataType
         /// `nil` until the variable has been assigned.
         public var value: Value?
-        /// Elements for arrays, `nil` for scalars.
+        /// Elements for arrays (possibly only the first ones), `nil` for scalars.
         public var elements: [Value?]?
+        /// The array's real length, which can exceed `elements.count`.
+        public var count: Int
 
-        public init(name: String, type: DataType, value: Value?, elements: [Value?]?) {
+        public init(name: String, type: DataType, value: Value?, elements: [Value?]?, count: Int? = nil) {
             self.name = name
             self.type = type
             self.value = value
             self.elements = elements
+            self.count = count ?? elements?.count ?? 0
         }
     }
 
@@ -86,6 +89,10 @@ public final class ExecutionController: Sendable {
     }
 
     private let state = Mutex(State())
+    /// Events sent but not yet handled by the UI. Kept bounded so a program printing
+    /// in a tight loop can't fill memory faster than the window can show it.
+    private let backlog = Atomic<Int>(0)
+    static let backlogLimit = 2000
     public let events: AsyncStream<ExecutionEvent>
     private let sink: AsyncStream<ExecutionEvent>.Continuation
 
@@ -159,7 +166,26 @@ public final class ExecutionController: Sendable {
 
     struct Stopped: Error {}
 
-    func emit(_ event: ExecutionEvent) { sink.yield(event) }
+    func emit(_ event: ExecutionEvent) {
+        backlog.add(1, ordering: .relaxed)
+        sink.yield(event)
+    }
+
+    /// The UI calls this after handling each event.
+    public func didHandleEvent() {
+        backlog.subtract(1, ordering: .relaxed)
+    }
+
+    /// True when the UI has fallen far behind; checked before every shape without suspending.
+    var isBacklogged: Bool { backlog.load(ordering: .relaxed) > Self.backlogLimit }
+
+    /// Waits while the UI is far behind.
+    func waitForBacklog() async throws {
+        while backlog.load(ordering: .relaxed) > Self.backlogLimit / 4 {
+            if isStopRequested { throw Stopped() }
+            try? await Task.sleep(for: .milliseconds(4))
+        }
+    }
 
     func finish() { sink.finish() }
 
@@ -171,10 +197,10 @@ public final class ExecutionController: Sendable {
         case stop
     }
 
-    /// Called before every shape runs. Suspends while paused, sleeps when running slowly.
-    func checkpoint(_ id: Statement.ID, function: String, breakpoint: Bool,
-                    snapshot: () -> VariablesSnapshot) async throws {
-        let gate = state.withLock { s -> Gate in
+    /// What should happen before the next shape. Synchronous, so the common case
+    /// (running at full speed) costs one lock and no suspension.
+    func gate(breakpoint: Bool) -> Gate {
+        state.withLock { s -> Gate in
             if s.stopRequested { return .stop }
             if breakpoint && !s.ignoreBreakpoints {
                 s.pauseRequested = false
@@ -191,6 +217,10 @@ public final class ExecutionController: Sendable {
             }
             return .run(delay: s.delay)
         }
+    }
+
+    /// Acts on a gate other than full-speed running: stops, sleeps or pauses.
+    func pass(_ gate: Gate, at id: Statement.ID, function: String, snapshot: () -> VariablesSnapshot) async throws {
         switch gate {
         case .stop:
             throw Stopped()

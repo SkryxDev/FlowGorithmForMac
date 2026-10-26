@@ -9,7 +9,7 @@ struct SettingsView: View {
             Tab("Running", systemImage: "play.circle") { RunningSettings() }
             Tab("Language", systemImage: "globe") { LanguageSettings() }
         }
-        .frame(width: 560)
+        .frame(width: 560, height: 560)
         .scenePadding()
     }
 }

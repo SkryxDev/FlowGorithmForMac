@@ -13,11 +13,16 @@ struct FlowchartView: View {
     @AppStorage(SettingsKey.showGrid) private var showsGrid = true
     @AppStorage(SettingsKey.compactLayout) private var compact = false
     @FocusState private var focused: Bool
-    @State private var pinchStart: CGFloat?
+    /// Live pinch factor, shown as a cheap transform; the real zoom (a new layout) is applied when the pinch ends.
+    @State private var pinch: CGFloat = 1
     @State private var dropTarget: String?
     @State private var dragging = false
     @State private var scrollPosition = ScrollPosition()
+    /// The visible part of the chart, needed only to place the insert menu; it's copied in
+    /// from `scroll` when the menu opens or the view scrolls while it's open.
     @State private var visibleRect = CGRect.zero
+    @State private var scroll = ScrollTracker()
+    @State private var menuSize = CGSize.zero
 
     nonisolated static let dragPrefix = "flowgorithmformac-shape:"
 
@@ -28,7 +33,7 @@ struct FlowchartView: View {
     var body: some View {
         let function = editor.currentFunction(in: program) ?? Function(name: "Main")
         let metrics = ChartMetrics(fontSize: fontSize * scale, compact: compact)
-        let layout = ChartLayout.make(function, metrics: metrics)
+        let layout = editor.layout(for: function, metrics: metrics)
 
         GeometryReader { geo in
             ScrollView([.horizontal, .vertical]) {
@@ -38,24 +43,32 @@ struct FlowchartView: View {
                     .background {
                         ZStack {
                             theme.canvas
-                            if showsGrid { ChartGrid(theme: theme, scale: scale) }
+                            if showsGrid { ChartGrid(theme: theme, scale: scale).equatable() }
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
                             editor.selection = nil
+                            editor.insertTarget = nil
                             focused = true
                         }
                     }
             }
             .scrollPosition($scrollPosition)
             .onScrollGeometryChange(for: CGRect.self) { $0.visibleRect } action: { _, rect in
-                visibleRect = rect
+                // Kept outside SwiftUI's state so scrolling doesn't rebuild the whole chart every frame.
+                scroll.visibleRect = rect
+                if editor.insertTarget != nil { visibleRect = rect }
+            }
+            .scaleEffect(pinch)
+            .overlay(alignment: .topLeading) {
+                insertMenu(layout: layout, viewport: geo.size)
             }
             .onChange(of: session.currentStatement) { _, id in
                 guard session.state != .running || session.speed < 0.98 else { return }
                 reveal(id, in: layout, viewport: geo.size)
             }
             .onChange(of: session.state) { _, state in
+                if state.isActive { editor.insertTarget = nil }
                 if state == .paused || state == .waitingForInput || state == .failed {
                     reveal(session.currentStatement, in: layout, viewport: geo.size)
                 }
@@ -72,14 +85,18 @@ struct FlowchartView: View {
             guard !locked, let selection = editor.selection else { return }
             editor.delete(selection, in: $program)
         }
+        .onExitCommand { editor.insertTarget = nil }
         .gesture(
             MagnifyGesture()
                 .onChanged { value in
-                    let start = pinchStart ?? editor.zoom
-                    pinchStart = start
-                    editor.zoom = min(EditorModel.maxZoom, max(EditorModel.minZoom, start * value.magnification))
+                    let zoom = editor.zoom
+                    pinch = min(EditorModel.maxZoom / zoom, max(EditorModel.minZoom / zoom, value.magnification))
                 }
-                .onEnded { _ in pinchStart = nil }
+                .onEnded { _ in
+                    let zoom = (editor.zoom * pinch * 100).rounded() / 100
+                    pinch = 1
+                    editor.zoom = min(EditorModel.maxZoom, max(EditorModel.minZoom, zoom))
+                }
         )
         .onChange(of: session.currentFunctionName) { _, name in
             // Follow execution into other functions.
@@ -88,6 +105,51 @@ struct FlowchartView: View {
                 editor.functionID = target.id
             }
         }
+        .onChange(of: editor.functionID) { editor.insertTarget = nil }
+    }
+
+    /// The shape palette for the "+" the user clicked, drawn over the chart rather than in a
+    /// system popover, and kept inside the visible area.
+    @ViewBuilder
+    func insertMenu(layout: ChartLayout, viewport: CGSize) -> some View {
+        if let target = editor.insertTarget, !locked,
+           let insert = layout.inserts.first(where: { $0.point == target }) {
+            let contentWidth = max(layout.size.width, viewport.width)
+            let anchor = CGPoint(x: insert.position.x + (contentWidth - layout.size.width) / 2 - visibleRect.minX,
+                                 y: insert.position.y - visibleRect.minY)
+            let size = menuSize == .zero ? CGSize(width: 520, height: 260) : menuSize
+            let fitsRight = anchor.x + 20 + size.width <= viewport.width - 8
+            let fitsLeft = anchor.x - 20 - size.width >= 8
+            let beside = fitsRight || fitsLeft
+            let rightSide = fitsRight || !fitsLeft
+            let x = fitsRight ? anchor.x + 20
+                : fitsLeft ? anchor.x - 20 - size.width
+                : min(max(8, anchor.x - size.width / 2), max(8, viewport.width - size.width - 8))
+            let below = anchor.y + 22 + size.height <= viewport.height - 8
+            let y = beside ? min(max(8, anchor.y - 36), max(8, viewport.height - size.height - 8))
+                : below ? anchor.y + 22 : max(8, anchor.y - 22 - size.height)
+            ZStack(alignment: .topLeading) {
+                // Clicking anywhere else closes the menu, as a popover would.
+                Color.black.opacity(0.001)
+                    .frame(width: viewport.width, height: viewport.height)
+                    .onTapGesture { editor.insertTarget = nil }
+                InsertMenu(theme: theme, canPaste: editor.canPaste) { template in
+                    editor.insertTarget = nil
+                    editor.insert(template, at: insert.point, in: $program)
+                } onPaste: {
+                    editor.insertTarget = nil
+                    editor.paste(at: insert.point, in: $program)
+                }
+                .fixedSize()
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.separator, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
+                .onGeometryChange(for: CGSize.self) { $0.size } action: { menuSize = $0 }
+                .offset(x: x, y: y)
+                .transition(.scale(scale: 0.92, anchor: rightSide ? .leading : .trailing).combined(with: .opacity))
+            }
+            .frame(width: viewport.width, height: viewport.height, alignment: .topLeading)
+        }
     }
 
     /// Scrolls just enough to bring a shape to the middle of the view, if it isn't visible already.
@@ -95,7 +157,8 @@ struct FlowchartView: View {
         guard let id, let node = layout.nodes.first(where: { $0.statement?.id == id }) else { return }
         let contentSize = CGSize(width: max(layout.size.width, viewport.width), height: max(layout.size.height, viewport.height))
         let frame = node.frame.offsetBy(dx: (contentSize.width - layout.size.width) / 2, dy: 0)
-        if visibleRect.width > 0, visibleRect.insetBy(dx: 16, dy: 16).contains(frame) { return }
+        let visible = scroll.visibleRect
+        if visible.width > 0, visible.insetBy(dx: 16, dy: 16).contains(frame) { return }
         let x = max(0, min(frame.midX - viewport.width / 2, contentSize.width - viewport.width))
         let y = max(0, min(frame.midY - viewport.height / 2, contentSize.height - viewport.height))
         withAnimation(.smooth(duration: 0.35)) { scrollPosition.scrollTo(point: CGPoint(x: x, y: y)) }
@@ -112,14 +175,17 @@ struct FlowchartView: View {
     func chart(_ layout: ChartLayout, metrics: ChartMetrics, function: Function) -> some View {
         ZStack(alignment: .topLeading) {
             ChartLines(layout: layout, theme: theme, fontSize: metrics.fontSize, scale: scale)
+                .equatable()
 
             ForEach(layout.nodes) { node in
                 ShapeView(node: node, theme: theme, fontSize: metrics.fontSize, scale: scale, highlight: highlight(for: node))
-                    .id(node.id)
-                    .position(x: node.frame.midX, y: node.frame.midY)
+                    .equatable()
+                    // Every modifier goes before .position: after it, the view fills the whole chart,
+                    // and a drop zone or menu would cover everything.
                     .onTapGesture(count: 2) { open(node, function: function) }
                     .simultaneousGesture(TapGesture().onEnded {
                         editor.selection = node.statement?.id
+                        editor.insertTarget = nil
                         focused = true
                     })
                     .contextMenu { contextMenu(for: node, function: function) }
@@ -128,30 +194,25 @@ struct FlowchartView: View {
                         dragging = true
                         return NSItemProvider(object: "\(Self.dragPrefix)\(id.uuidString)" as NSString)
                     }
-                    .help(node.statement.flatMap { $0.validationError.map(ErrorText.message) } ?? "")
+                    .help(node.problem ?? "")
+                    .position(x: node.frame.midX, y: node.frame.midY)
             }
 
             if !locked {
                 ForEach(layout.inserts) { insert in
                     InsertButton(theme: theme, scale: scale, targeted: dropTarget == insert.id,
-                                 presented: Binding(
-                                    get: { editor.insertTarget == insert.point },
-                                    set: { if !$0, editor.insertTarget == insert.point { editor.insertTarget = nil } }),
-                                 onTap: { editor.insertTarget = insert.point }) {
-                        InsertMenu(theme: theme, canPaste: editor.canPaste) { template in
-                            editor.insertTarget = nil
-                            editor.insert(template, at: insert.point, in: $program)
-                        } onPaste: {
-                            editor.insertTarget = nil
-                            editor.paste(at: insert.point, in: $program)
+                                 presented: editor.insertTarget == insert.point) {
+                        visibleRect = scroll.visibleRect
+                        withAnimation(.snappy(duration: 0.2)) {
+                            editor.insertTarget = editor.insertTarget == insert.point ? nil : insert.point
                         }
                     }
-                    .position(insert.position)
                     .onDrop(of: [.plainText], isTargeted: Binding(
                         get: { dropTarget == insert.id },
                         set: { dropTarget = $0 ? insert.id : (dropTarget == insert.id ? nil : dropTarget) })) { providers in
                         handleDrop(providers, at: insert.point)
                     }
+                    .position(insert.position)
                 }
             }
         }
@@ -185,7 +246,8 @@ struct FlowchartView: View {
                 editor.selection = statement.id
                 editor.paste(in: $program)
             }
-            .disabled(locked || !editor.canPaste)
+            // Not tied to canPaste: the menu is built before the user copies, so it would be stale.
+            .disabled(locked)
             Button("Duplicate", systemImage: "plus.square.on.square") { editor.duplicate(statement.id, in: $program) }.disabled(locked)
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) { editor.delete(statement.id, in: $program) }.disabled(locked)
@@ -211,37 +273,39 @@ struct FlowchartView: View {
 }
 
 /// The "+" on a connector. Small and quiet until hovered.
-struct InsertButton<Menu: View>: View {
+struct InsertButton: View {
     let theme: Theme
     let scale: CGFloat
     var targeted: Bool
-    @Binding var presented: Bool
+    var presented: Bool
     let onTap: () -> Void
-    @ViewBuilder let menu: () -> Menu
 
     @State private var hovering = false
 
     var body: some View {
         let active = hovering || presented || targeted
-        let size = (active ? 20 : 6) * max(scale, 0.7)
-        ZStack {
-            Circle()
-                .fill(active ? Color.accentColor : .clear)
-                .shadow(color: active ? Color.accentColor.opacity(0.5) : .clear, radius: 4)
-            if active {
+        let size = 20 * max(scale, 0.7)
+        Circle()
+            .fill(Color.accentColor)
+            .overlay {
                 Image(systemName: "plus")
                     .font(.system(size: size * 0.55, weight: .bold))
                     .foregroundStyle(.white)
             }
-        }
-        .frame(width: size, height: size)
-        .scaleEffect(targeted ? 1.3 : 1)
-        .frame(width: 28 * max(scale, 0.7), height: 24 * max(scale, 0.7))
-        .contentShape(Rectangle())
-        .onHover { hovering = $0 }
-        .animation(.snappy(duration: 0.18), value: active)
-        .onTapGesture(perform: onTap)
-        .popover(isPresented: $presented, arrowEdge: .trailing, content: menu)
-        .help("Add a shape here")
+            .frame(width: size, height: size)
+            .shadow(color: Color.accentColor.opacity(active ? 0.5 : 0), radius: active ? 4 : 0)
+            .scaleEffect(active ? (targeted ? 1.3 : 1) : 0.3)
+            .opacity(active ? 1 : 0)
+            .frame(width: 28 * max(scale, 0.7), height: 24 * max(scale, 0.7))
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            .animation(.snappy(duration: 0.18), value: active)
+            .onTapGesture(perform: onTap)
+            .help("Add a shape here")
     }
+}
+
+/// Holds the scroll view's visible rectangle without triggering view updates.
+final class ScrollTracker {
+    var visibleRect = CGRect.zero
 }

@@ -98,6 +98,8 @@ class Emitter {
     var currentStatement: Statement?
     var currentFunction: Function?
     var symbols: [String: Symbol] = [:]
+    /// Declared spelling of each variable of the current function, by lowercased name.
+    var spellings: [String: String] = [:]
     /// Features used by the program, so imports and helpers are only emitted when needed.
     var uses: Set<String> = []
 
@@ -148,12 +150,19 @@ class Emitter {
     func enter(_ function: Function) {
         currentFunction = function
         symbols = [:]
+        spellings = [:]
         for parameter in function.parameters {
-            symbols[parameter.name.lowercased()] = Symbol(type: parameter.type, isArray: parameter.isArray)
+            let key = parameter.name.lowercased()
+            symbols[key] = Symbol(type: parameter.type, isArray: parameter.isArray)
+            if spellings[key] == nil { spellings[key] = parameter.name }
         }
         for statement in function.body.flattened {
             if case .declare(let d) = statement.kind {
-                for name in d.nameList { symbols[name.lowercased()] = Symbol(type: d.type, isArray: d.isArray) }
+                for name in d.nameList {
+                    let key = name.lowercased()
+                    symbols[key] = Symbol(type: d.type, isArray: d.isArray)
+                    if spellings[key] == nil { spellings[key] = name }
+                }
             }
         }
     }
@@ -231,16 +240,7 @@ class Emitter {
 
     /// The declared spelling of a variable (identifiers are case-insensitive in flowcharts, not in most languages).
     func name(_ raw: String) -> String {
-        if let parameter = currentFunction?.parameters.first(where: { $0.name.caseInsensitiveCompare(raw) == .orderedSame }) {
-            return parameter.name
-        }
-        for statement in currentFunction?.body.flattened ?? [] {
-            if case .declare(let d) = statement.kind,
-               let declared = d.nameList.first(where: { $0.caseInsensitiveCompare(raw) == .orderedSame }) {
-                return declared
-            }
-        }
-        return raw
+        spellings[raw.lowercased()] ?? raw
     }
 
     func functionName(_ raw: String) -> String {
@@ -445,11 +445,35 @@ class Emitter {
                 }
             }
         }
-        // Intrinsics are found by looking at the expression text; it's cheap and good enough for imports.
-        let allText = program.functions.flatMap(\.body.flattened).map { "\($0.kind)" }.joined().lowercased()
+        // Imports depend on which built-in functions appear, so look through every expression once.
+        let allText = program.functions.flatMap(\.body.flattened).map(\.expressionText).joined(separator: " ").lowercased()
         for name in ["random", "sqrt", "sin", "cos", "tan", "arc", "log", "ln(", "pi", "^", "tofixed", "eof", "abs", "int(", "sgn"] where allText.contains(name) {
             uses.insert(name)
         }
-        if allText.contains("input") { uses.insert("input") }
+        if allText.contains("π") { uses.insert("pi") }
+    }
+}
+
+extension Statement {
+    /// The expressions typed into this shape (not those of nested shapes).
+    var expressionText: String {
+        switch kind {
+        case .declare(let s): s.size
+        case .assign(let s): s.variable + " " + s.expression
+        case .input(let s): s.variable
+        case .output(let s): s.expression
+        case .if(let s): s.expression
+        case .while(let s): s.expression
+        case .do(let s): s.expression
+        case .for(let s): [s.variable, s.start, s.end, s.step].joined(separator: " ")
+        case .call(let s): s.expression
+        case .breakpoint(let s): s.expression
+        case .open(let s): s.expression
+        case .read(let s): s.variable
+        case .write(let s): s.expression
+        case .turn(let s): s.expression
+        case .forward(let s): s.expression
+        case .comment, .close, .home, .clear, .pen, .unknown: ""
+        }
     }
 }

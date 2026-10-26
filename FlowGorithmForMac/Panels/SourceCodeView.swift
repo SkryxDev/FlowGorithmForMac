@@ -11,12 +11,13 @@ struct SourceCodeView: View {
     @AppStorage(SettingsKey.sourceLanguage) private var languageID = SourceLanguage.python.rawValue
     @AppStorage(SettingsKey.theme) private var themeID = Theme.classic.id
     @State private var position = ScrollPosition(idType: Int.self)
+    @State private var cache = SourceCache()
 
     var language: SourceLanguage { SourceLanguage(rawValue: languageID) ?? .python }
     var theme: Theme { Theme.named(themeID) }
 
     var body: some View {
-        let source = CodeGenerator.generate(program, language: language)
+        let source = cache.source(for: program, language: language)
         let active = session.state.isActive ? session.currentStatement : editor.selection
         VStack(spacing: 0) {
             HStack {
@@ -31,10 +32,7 @@ struct SourceCodeView: View {
                 .labelsHidden()
                 .fixedSize()
                 Spacer()
-                Button("Copy", systemImage: "doc.on.doc") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(source.text, forType: .string)
-                }
+                Button("Copy", systemImage: "doc.on.doc") { copy(source.text) }
                 Button("Save…", systemImage: "square.and.arrow.down") { save(source) }
             }
             .labelStyle(.iconOnly)
@@ -50,10 +48,13 @@ struct SourceCodeView: View {
                                 .onTapGesture {
                                     if let id = line.statementID { editor.selection = id }
                                 }
+                                .contextMenu {
+                                    Button("Copy Line", systemImage: "doc.on.doc") { copy(line.text.trimmingCharacters(in: .whitespaces)) }
+                                    Button("Copy All", systemImage: "doc.on.doc.fill") { copy(source.text) }
+                                }
                         }
                     }
                     .padding(.vertical, 8)
-                    .textSelection(.enabled)
                     .scrollTargetLayout()
             }
             .scrollPosition($position, anchor: .center)
@@ -62,6 +63,11 @@ struct SourceCodeView: View {
                 withAnimation(.smooth) { position.scrollTo(id: line.id, anchor: .center) }
             }
         }
+    }
+
+    func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     func save(_ source: GeneratedSource) {
@@ -98,5 +104,19 @@ private struct CodeLine: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(active ? Color.accentColor.opacity(0.18) : .clear)
         .contentShape(Rectangle())
+    }
+}
+
+/// Remembers the last generated source, so highlighting while a program runs doesn't regenerate it.
+final class SourceCache {
+    private var key: (program: Program, language: SourceLanguage)?
+    private var value: GeneratedSource?
+
+    func source(for program: Program, language: SourceLanguage) -> GeneratedSource {
+        if let key, let value, key.language == language, key.program == program { return value }
+        let generated = CodeGenerator.generate(program, language: language)
+        key = (program, language)
+        value = generated
+        return generated
     }
 }

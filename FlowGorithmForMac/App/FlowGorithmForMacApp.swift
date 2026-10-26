@@ -91,6 +91,9 @@ struct AppCommands: Commands {
                 .keyboardShortcut("4", modifiers: [.command, .option])
             Button("Show or Hide Panels") { actions?.toggleInspector() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
+            Toggle("Two Panels", isOn: Binding(get: { actions?.showsBottomPanel ?? true },
+                                               set: { _ in actions?.toggleBottomPanel() }))
+                .disabled(actions == nil)
             Divider()
         }
 

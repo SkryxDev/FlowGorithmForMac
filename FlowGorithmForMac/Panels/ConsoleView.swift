@@ -1,3 +1,4 @@
+import AppKit
 import FlowCore
 import SwiftUI
 
@@ -5,35 +6,52 @@ import SwiftUI
 struct ConsoleView: View {
     var session: RunSession
     @AppStorage(SettingsKey.chatConsole) private var chatStyle = true
-    @AppStorage(SettingsKey.theme) private var themeID = Theme.classic.id
     @State private var input = ""
     @FocusState private var inputFocused: Bool
-
-    var theme: Theme { Theme.named(themeID) }
+    @State private var position = ScrollPosition(edge: .bottom)
+    /// Whether new output should scroll into view: true unless the user scrolled up to read.
+    @State private var followsOutput = true
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
+            ScrollView {
                     LazyVStack(alignment: .leading, spacing: chatStyle ? 8 : 2) {
                         if session.console.isEmpty {
                             empty
                         }
                         ForEach(session.console) { entry in
-                            if chatStyle {
-                                Bubble(entry: entry, theme: theme)
-                            } else {
-                                PlainLine(entry: entry)
+                            Group {
+                                if chatStyle {
+                                    Bubble(entry: entry)
+                                } else {
+                                    PlainLine(entry: entry)
+                                }
+                            }
+                            .contextMenu {
+                                Button("Copy", systemImage: "doc.on.doc") { copy(entry.text) }
+                                Button("Copy All", systemImage: "doc.on.doc.fill") {
+                                    copy(session.console.map(\.text).joined(separator: "\n"))
+                                }
+                                Divider()
+                                Button("Clear Console", systemImage: "trash") { session.clearConsole() }
+                                    .disabled(session.state.isActive)
                             }
                         }
-                        Color.clear.frame(height: 1).id("bottom")
                     }
                     .padding(12)
-                    .textSelection(.enabled)
-                }
-                .onChange(of: session.consoleRevision) {
-                    proxy.scrollTo("bottom", anchor: .bottom)
-                }
+            }
+            .defaultScrollAnchor(.bottom)
+            .scrollPosition($position)
+            // Scrolling to the edge needs no search through the rows, unlike scrolling to an ID.
+            .onChange(of: session.consoleRevision) {
+                // A new run starts following again even if the last one was scrolled up.
+                if session.console.count <= 1 { followsOutput = true }
+                if followsOutput { position.scrollTo(edge: .bottom) }
+            }
+            .onScrollPhaseChange { _, phase, context in
+                guard phase == .idle else { return }
+                let geometry = context.geometry
+                followsOutput = geometry.contentOffset.y + geometry.containerSize.height >= geometry.contentSize.height - 40
             }
             if session.inputRequest != nil {
                 inputBar
@@ -42,7 +60,7 @@ struct ConsoleView: View {
         }
         .animation(.snappy, value: session.inputRequest != nil)
         .onChange(of: session.inputRequest != nil) { _, waiting in
-            if waiting { inputFocused = true }
+            if waiting { focusInput() }
         }
     }
 
@@ -73,6 +91,7 @@ struct ConsoleView: View {
                     .textFieldStyle(.plain)
                     .focused($inputFocused)
                     .onSubmit(submit)
+                    .onAppear(perform: focusInput)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .glassEffect(.regular, in: .capsule)
@@ -83,11 +102,23 @@ struct ConsoleView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .buttonBorderShape(.circle)
-                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(12)
         .background(.bar)
+    }
+
+    func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    /// The field appears with a transition; focus only sticks once it's in the window.
+    func focusInput() {
+        Task {
+            try? await Task.sleep(for: .milliseconds(60))
+            inputFocused = true
+        }
     }
 
     func submit() {
@@ -98,7 +129,6 @@ struct ConsoleView: View {
 
 private struct Bubble: View {
     let entry: ConsoleEntry
-    let theme: Theme
 
     var body: some View {
         switch entry.kind {

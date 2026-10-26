@@ -1,36 +1,32 @@
 import Foundation
 
 extension Interpreter {
-    /// Built-in functions, matched case-insensitively.
-    func intrinsic(_ name: String, _ arguments: [Expr], in frame: Frame) async throws -> Value {
-        let lower = name.lowercased()
-
-        func expectCount(_ count: Int) throws(RuntimeError) {
-            guard arguments.count == count else {
-                throw RuntimeError(.wrongArgumentCount(function: name, expected: count, found: arguments.count))
+    /// Size() and EOF() look at an array or the open file rather than at argument values.
+    func specialIntrinsic(_ function: Intrinsic, display: String, count: Int, array: Name?, in frame: Frame) throws(RuntimeError) -> Value? {
+        switch function {
+        case .size:
+            guard count == 1 else { throw RuntimeError(.wrongArgumentCount(function: display, expected: 1, found: count)) }
+            guard let array, case .array(let storage) = try frame.slot(array) else {
+                throw RuntimeError(.argumentMustBeArray(function: display, parameter: "a"))
             }
-        }
-
-        // Functions that look at the argument itself rather than its value.
-        switch lower {
-        case "size":
-            try expectCount(1)
-            guard case .variable(let arrayName) = arguments[0].unwrapped,
-                  case .array(let array) = try frame.slot(arrayName) else {
-                throw RuntimeError(.argumentMustBeArray(function: name, parameter: "a"))
-            }
-            return .integer(Int64(array.elements.count))
-        case "eof":
-            try expectCount(0)
+            return .integer(Int64(storage.elements.count))
+        case .eof:
+            guard count == 0 else { throw RuntimeError(.wrongArgumentCount(function: display, expected: 0, found: count)) }
             guard let open = file else { throw RuntimeError(.fileNotOpen) }
             guard open.mode == .read else { throw RuntimeError(.fileWrongMode) }
             return .boolean(open.nextLine >= open.lines.count)
         default:
-            break
+            return nil
         }
+    }
 
-        var values: [Value] = []
-        for argument in arguments { values.append(try await evaluate(argument, in: frame)) }
+    /// Every other built-in function, applied to already evaluated arguments.
+    func intrinsic(_ function: Intrinsic, display name: String, _ values: [Value]) throws(RuntimeError) -> Value {
+        func expectCount(_ count: Int) throws(RuntimeError) {
+            guard values.count == count else {
+                throw RuntimeError(.wrongArgumentCount(function: name, expected: count, found: values.count))
+            }
+        }
 
         func num(_ i: Int) throws(RuntimeError) -> Double {
             guard let n = values[i].numeric else {
@@ -51,93 +47,96 @@ extension Interpreter {
             return .real(v)
         }
 
-        switch lower {
-        case "abs":
+        switch function {
+        case .size, .eof:
+            // Handled by specialIntrinsic before arguments are evaluated.
+            throw RuntimeError(.invalidArgument(function: name))
+        case .abs:
             try expectCount(1)
             if case .integer(let v) = values[0] {
                 guard v != .min else { throw RuntimeError(.overflow) }
                 return .integer(Swift.abs(v))
             }
             return .real(Swift.abs(try num(0)))
-        case "arccos":
+        case .arccos:
             try expectCount(1)
             let x = try num(0)
             guard (-1...1).contains(x) else { throw RuntimeError(.mathDomain(function: name)) }
             return .real(acos(x))
-        case "arcsin":
+        case .arcsin:
             try expectCount(1)
             let x = try num(0)
             guard (-1...1).contains(x) else { throw RuntimeError(.mathDomain(function: name)) }
             return .real(asin(x))
-        case "arctan":
+        case .arctan:
             try expectCount(1)
             return .real(atan(try num(0)))
-        case "cos":
+        case .cos:
             try expectCount(1)
             return .real(cos(try num(0)))
-        case "sin":
+        case .sin:
             try expectCount(1)
             return .real(sin(try num(0)))
-        case "tan":
+        case .tan:
             try expectCount(1)
             return try real(tan(try num(0)))
-        case "int":
+        case .int:
             try expectCount(1)
             if case .integer = values[0] { return values[0] }
             let x = try num(0).rounded(.towardZero)
             guard let v = Int64(exactly: x) else { throw RuntimeError(.overflow) }
             return .integer(v)
-        case "ln", "log":
+        case .ln, .log:
             try expectCount(1)
             let x = try num(0)
             guard x > 0 else { throw RuntimeError(.mathDomain(function: name)) }
             return .real(Foundation.log(x))
-        case "log10":
+        case .log10:
             try expectCount(1)
             let x = try num(0)
             guard x > 0 else { throw RuntimeError(.mathDomain(function: name)) }
             return .real(Foundation.log10(x))
-        case "sgn":
+        case .sgn:
             try expectCount(1)
             let x = try num(0)
             return .integer(x > 0 ? 1 : x < 0 ? -1 : 0)
-        case "sqrt":
+        case .sqrt:
             try expectCount(1)
             let x = try num(0)
             guard x >= 0 else { throw RuntimeError(.mathDomain(function: name)) }
             return .real(x.squareRoot())
-        case "random":
+        case .random:
             try expectCount(1)
             let n = try integer(values[0], context: name)
             guard n > 0 else { throw RuntimeError(.invalidArgument(function: name)) }
             return .integer(Int64.random(in: 0..<n))
-        case "len":
+        case .len:
             try expectCount(1)
             return .integer(Int64(try str(0).count))
-        case "char":
+        case .char:
             try expectCount(2)
-            let s = Array(try str(0))
+            let s = try str(0)
             let i = try integer(values[1], context: name)
             guard i >= 0, i < s.count else { throw RuntimeError(.indexOutOfBounds(name: "Char", index: i, size: s.count)) }
-            return .string(String(s[Int(i)]))
-        case "tochar":
+            return .string(String(s[s.index(s.startIndex, offsetBy: Int(i))]))
+        case .tochar:
             try expectCount(1)
             let code = try integer(values[0], context: name)
             guard let scalar = UInt32(exactly: code).flatMap(Unicode.Scalar.init) else {
                 throw RuntimeError(.invalidArgument(function: name))
             }
             return .string(String(Character(scalar)))
-        case "tocode":
+        case .tocode:
             try expectCount(1)
             guard let scalar = try str(0).unicodeScalars.first else { throw RuntimeError(.invalidArgument(function: name)) }
             return .integer(Int64(scalar.value))
-        case "tofixed":
+        case .tofixed:
             try expectCount(2)
             let x = try num(0)
             let digits = try integer(values[1], context: name)
             guard (0...20).contains(digits) else { throw RuntimeError(.invalidArgument(function: name)) }
             return .string(String(format: "%.\(digits)f", x))
-        case "tointeger":
+        case .tointeger:
             try expectCount(1)
             switch values[0] {
             case .integer: return values[0]
@@ -152,7 +151,7 @@ extension Interpreter {
             case .boolean(let b):
                 return .integer(b ? 1 : 0)
             }
-        case "toreal":
+        case .toreal:
             try expectCount(1)
             switch values[0] {
             case .integer(let v): return .real(Double(v))
@@ -165,11 +164,9 @@ extension Interpreter {
             case .boolean(let b):
                 return .real(b ? 1 : 0)
             }
-        case "tostring":
+        case .tostring:
             try expectCount(1)
             return .string(values[0].displayString)
-        default:
-            throw RuntimeError(.unknownFunction(name))
         }
     }
 }

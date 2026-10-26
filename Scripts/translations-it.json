@@ -42,6 +42,7 @@
   "Checks a Boolean expression and runs the True or the False branch.": "Controlla un'espressione booleana ed esegue il ramo Vero o il ramo Falso.",
   "Classic": "Classico",
   "Clear": "Pulisci",
+  "Clear Console": "Pulisci console",
   "Close": "Chiusura",
   "Close file": "Chiudi file",
   "Closes the file opened with the Open shape.": "Chiude il file aperto con il blocco Apertura.",
@@ -54,6 +55,8 @@
   "Console": "Console",
   "Continue": "Continua",
   "Copy": "Copia",
+  "Copy All": "Copia tutto",
+  "Copy Line": "Copia riga",
   "Counts a variable through a range of values, running the body each time.": "Fa scorrere una variabile in un intervallo di valori, eseguendo il corpo ogni volta.",
   "Create": "Crea",
   "Creates variables or arrays. Separate several names with commas.": "Crea variabili o array. Separa più nomi con le virgole.",
@@ -94,6 +97,7 @@
   "File name": "Nome del file",
   "Files": "File",
   "Finished": "Terminato",
+  "Fit Drawing": "Adatta il disegno",
   "Flowchart": "Diagramma",
   "Flowchart Program": "Programma diagramma di flusso",
   "For": "Per",
@@ -252,6 +256,7 @@
   "Turtle": "Tartaruga",
   "Turtle graphics": "Grafica tartaruga",
   "Turtle graphics and file shapes": "Blocchi di grafica tartaruga e file",
+  "Two Panels": "Due pannelli",
   "Two parameters are called “%@”.": "Due parametri si chiamano “%@”.",
   "Type": "Tipo",
   "Unexpected character “%@” in “%@”.": "Carattere inatteso “%1$@” in “%2$@”.",
@@ -289,5 +294,6 @@
   "“%@” isn't a valid number.": "“%@” non è un numero valido.",
   "“%@” isn't a variable name.": "“%@” non è il nome di una variabile.",
   "“%@” isn't an array, so it can't be used with [ ].": "“%@” non è un array, quindi non si può usare con [ ].",
-  "“%@” needs %lld arguments, but got %lld.": "“%1$@” richiede %2$lld argomenti, ma ne ha ricevuti %3$lld."
+  "“%@” needs %lld arguments, but got %lld.": "“%1$@” richiede %2$lld argomenti, ma ne ha ricevuti %3$lld.",
+  "…and %lld more": "…e altri %lld"
 }

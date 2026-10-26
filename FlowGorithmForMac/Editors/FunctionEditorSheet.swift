@@ -24,6 +24,8 @@ struct FunctionEditorSheet: View {
     var parameterProblem: String? {
         var seen = Set<String>()
         for parameter in function.parameters {
+            // A row just added is empty; that only disables Create, without an error.
+            if parameter.name.trimmingCharacters(in: .whitespaces).isEmpty { continue }
             if let problem = Identifier.validate(parameter.name) {
                 return ErrorText.message(RuntimeError(.invalidName(parameter.name, problem)))
             }
@@ -57,7 +59,7 @@ struct FunctionEditorSheet: View {
             Form {
                 Section {
                     TextField("Name", text: $function.name, prompt: Text("Average"))
-                    if let nameProblem {
+                    if let nameProblem, !function.name.trimmingCharacters(in: .whitespaces).isEmpty {
                         Label(nameProblem, systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.red)
                             .font(.caption)
@@ -128,7 +130,8 @@ struct FunctionEditorSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.glassProminent)
-                .disabled(nameProblem != nil || parameterProblem != nil)
+                .disabled(nameProblem != nil || parameterProblem != nil
+                          || function.parameters.contains { $0.name.trimmingCharacters(in: .whitespaces).isEmpty })
             }
             .padding(16)
         }

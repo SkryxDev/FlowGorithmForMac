@@ -30,6 +30,9 @@ final class RunSession {
     var console: [ConsoleEntry] = []
     var variables = VariablesSnapshot()
     var segments: [TurtleSegment] = []
+    /// Changes whenever segments are removed rather than appended, so the turtle view knows
+    /// it must redraw from scratch instead of adding only the new lines.
+    private(set) var turtleGeneration = 0
     var turtlePosition = CGPoint.zero
     var turtleHeading = 90.0
     var currentStatement: Statement.ID?
@@ -49,9 +52,20 @@ final class RunSession {
     private(set) var consoleRevision = 0
     private var controller: ExecutionController?
     private var eventTask: Task<Void, Never>?
-    private var nextEntryID = 0
-    private var outputLineOpen = false
+    @ObservationIgnored private var nextEntryID = 0
+    @ObservationIgnored private var outputLineOpen = false
+    // Output and drawing arrive in bursts; they're collected here and shown about 30 times a second.
+    @ObservationIgnored private var pendingOutput: [(text: String, newline: Bool)] = []
+    @ObservationIgnored private var pendingSegments: [TurtleSegment] = []
+    @ObservationIgnored private var pendingTurtle: (position: CGPoint, heading: Double)?
+    @ObservationIgnored private var flushScheduled = false
+    private static let maxSegments = 200_000
     private static let maxConsoleEntries = 4000
+
+    /// A window closed while its program runs must not leave the program running in the background.
+    isolated deinit {
+        controller?.stop()
+    }
 
     static func delay(for speed: Double) -> Duration {
         if speed >= 0.98 { return .zero }
@@ -86,8 +100,16 @@ final class RunSession {
         let interpreter = Interpreter(program: program, controller: controller, baseDirectory: baseDirectory, maxDepth: maxDepth)
         eventTask = Task { [weak self] in
             async let finished: Void = interpreter.run()
+            var lastBreath = ContinuousClock.now
             for await event in controller.events {
                 self?.handle(event)
+                controller.didHandleEvent()
+                // Buffered events don't suspend the loop, so without a pause now and then a fast
+                // program would keep the main thread busy and the window would never redraw.
+                if ContinuousClock.now - lastBreath > .milliseconds(12) {
+                    try? await Task.sleep(for: .milliseconds(2))
+                    lastBreath = .now
+                }
             }
             await finished
         }
@@ -111,7 +133,7 @@ final class RunSession {
     }
 
     /// Values pasted as several lines; each answers the next input request.
-    private var pendingInputs: [String] = []
+    @ObservationIgnored private var pendingInputs: [String] = []
 
     func submitInput(_ text: String) {
         guard inputRequest != nil else { return }
@@ -126,13 +148,17 @@ final class RunSession {
     }
 
     func clearConsole() {
+        pendingOutput.removeAll()
         console.removeAll()
         outputLineOpen = false
         consoleRevision += 1
     }
 
     func clearTurtle() {
+        pendingSegments.removeAll()
+        pendingTurtle = nil
         segments.removeAll()
+        turtleGeneration += 1
         turtlePosition = .zero
         turtleHeading = 90
     }
@@ -150,16 +176,80 @@ final class RunSession {
 
     // MARK: Events
 
+    private func scheduleFlush() {
+        guard !flushScheduled else { return }
+        flushScheduled = true
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(33))
+            self?.flush()
+        }
+    }
+
+    /// Moves collected output and drawing into the observed properties in one go.
+    private func flush() {
+        flushScheduled = false
+        if !pendingOutput.isEmpty {
+            var entries = console
+            var open = outputLineOpen
+            for piece in pendingOutput {
+                if open, let last = entries.indices.last, entries[last].kind == .output {
+                    entries[last].text += piece.text
+                } else {
+                    entries.append(ConsoleEntry(id: nextEntryID, kind: .output, text: piece.text))
+                    nextEntryID += 1
+                }
+                open = !piece.newline
+            }
+            pendingOutput.removeAll(keepingCapacity: true)
+            if entries.count > Self.maxConsoleEntries {
+                entries.removeFirst(entries.count - Self.maxConsoleEntries)
+            }
+            console = entries
+            outputLineOpen = open
+            consoleRevision += 1
+        }
+        if !pendingSegments.isEmpty {
+            segments.append(contentsOf: pendingSegments)
+            pendingSegments.removeAll(keepingCapacity: true)
+            if segments.count > Self.maxSegments {
+                segments.removeFirst(segments.count - Self.maxSegments)
+                turtleGeneration += 1
+            }
+        }
+        if let turtle = pendingTurtle {
+            turtlePosition = turtle.position
+            turtleHeading = turtle.heading
+            pendingTurtle = nil
+        }
+    }
+
     private func handle(_ event: ExecutionEvent) {
         switch event {
         case .output(let text, let newline):
-            if outputLineOpen, let last = console.indices.last, console[last].kind == .output {
-                console[last].text += text
-                consoleRevision += 1
-            } else {
-                append(.output, text)
+            pendingOutput.append((text, newline))
+            if pendingOutput.count > Self.maxConsoleEntries { flush() } else { scheduleFlush() }
+            return
+        case .turtle(.line(let from, let to, let color, let drawn)):
+            if drawn {
+                pendingSegments.append(TurtleSegment(from: CGPoint(x: from.x, y: from.y), to: CGPoint(x: to.x, y: to.y), color: color))
+                if pendingSegments.count > 20_000 { flush() } else { scheduleFlush() }
             }
-            outputLineOpen = !newline
+            return
+        case .turtle(.turtle(let position, let heading)):
+            pendingTurtle = (CGPoint(x: position.x, y: position.y), heading)
+            scheduleFlush()
+            return
+        case .variables(let snapshot):
+            variables = snapshot
+            return
+        default:
+            // Anything else must appear after the output that came before it.
+            flush()
+        }
+
+        switch event {
+        case .output, .variables, .turtle(.line), .turtle(.turtle):
+            break
 
         case .inputRequested(let variable, let type, let statement):
             currentStatement = statement
@@ -192,21 +282,10 @@ final class RunSession {
         case .resumed:
             if state == .paused { state = .running }
 
-        case .variables(let snapshot):
-            variables = snapshot
-
-        case .turtle(let command):
-            switch command {
-            case .line(let from, let to, let color, let drawn):
-                if drawn {
-                    segments.append(TurtleSegment(from: CGPoint(x: from.x, y: from.y), to: CGPoint(x: to.x, y: to.y), color: color))
-                }
-            case .turtle(let position, let heading):
-                turtlePosition = CGPoint(x: position.x, y: position.y)
-                turtleHeading = heading
-            case .clear:
-                segments.removeAll()
-            }
+        case .turtle(.clear):
+            pendingSegments.removeAll()
+            segments.removeAll()
+        turtleGeneration += 1
 
         case .finished(let snapshot):
             variables = snapshot

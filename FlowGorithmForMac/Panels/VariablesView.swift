@@ -44,21 +44,26 @@ private struct VariableRow: View {
     var body: some View {
         if let elements = variable.elements {
             DisclosureGroup(isExpanded: $expanded) {
-                ForEach(Array(elements.enumerated()), id: \.offset) { index, value in
+                ForEach(elements.indices, id: \.self) { index in
                     HStack {
                         Text("[\(index)]")
                             .font(.system(.callout, design: .monospaced))
                             .foregroundStyle(.secondary)
                         Spacer()
-                        ValueText(value: value, type: variable.type)
+                        ValueText(value: elements[index], type: variable.type)
                     }
+                }
+                if variable.count > elements.count {
+                    Text("…and \(variable.count - elements.count) more")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             } label: {
                 HStack {
                     TypeBadge(type: variable.type, isArray: true)
                     Text(variable.name).fontWeight(.medium)
                     Spacer()
-                    Text("\(elements.count) elements")
+                    Text("\(variable.count) elements")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -85,8 +90,6 @@ private struct ValueText: View {
                 .foregroundStyle(type.color)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .contentTransition(.numericText())
-                .animation(.snappy, value: value)
         } else {
             Text("—")
                 .foregroundStyle(.tertiary)

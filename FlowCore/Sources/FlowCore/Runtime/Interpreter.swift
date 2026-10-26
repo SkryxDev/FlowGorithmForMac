@@ -37,15 +37,14 @@ public final class Interpreter: @unchecked Sendable {
         var order: [String] = []
         init(function: String) { self.function = function }
 
-        func declare(_ name: String, _ slot: Slot) throws(RuntimeError) {
-            let key = name.lowercased()
-            if slots[key] != nil { throw RuntimeError(.alreadyDeclared(name)) }
-            slots[key] = slot
-            order.append(name)
+        func declare(_ name: Name, _ slot: Slot) throws(RuntimeError) {
+            if slots[name.key] != nil { throw RuntimeError(.alreadyDeclared(name.display)) }
+            slots[name.key] = slot
+            order.append(name.display)
         }
 
-        func slot(_ name: String) throws(RuntimeError) -> Slot {
-            guard let slot = slots[name.lowercased()] else { throw RuntimeError(.undeclaredVariable(name)) }
+        func slot(_ name: Name) throws(RuntimeError) -> Slot {
+            guard let slot = slots[name.key] else { throw RuntimeError(.undeclaredVariable(name.display)) }
             return slot
         }
     }
@@ -57,6 +56,10 @@ public final class Interpreter: @unchecked Sendable {
         var nextLine = 0
         var buffer = ""
     }
+
+    /// Arrays longer than this are shown truncated in the variable watch, so a big array
+    /// isn't copied to the window several times a second.
+    static let snapshotElementLimit = 1000
 
     public let program: Program
     public let controller: ExecutionController
@@ -70,7 +73,7 @@ public final class Interpreter: @unchecked Sendable {
     var turtleX = 0.0, turtleY = 0.0, turtleHeading = 90.0
     var penColor = PenColor.black
     var lastSnapshot = ContinuousClock.now
-    var currentFunction = "Main"
+    var checkpointCount = 0
 
     public init(program: Program, controller: ExecutionController, baseDirectory: URL? = nil, maxDepth: Int = 5000) {
         self.program = program
@@ -120,7 +123,9 @@ public final class Interpreter: @unchecked Sendable {
                 case .scalar(let scalar):
                     VariablesSnapshot.Variable(name: name, type: scalar.type, value: scalar.value, elements: nil)
                 case .array(let array):
-                    VariablesSnapshot.Variable(name: name, type: array.type, value: nil, elements: array.elements)
+                    VariablesSnapshot.Variable(name: name, type: array.type, value: nil,
+                                               elements: Array(array.elements.prefix(Self.snapshotElementLimit)),
+                                               count: array.elements.count)
                 case nil:
                     nil
                 }
@@ -130,7 +135,7 @@ public final class Interpreter: @unchecked Sendable {
 
     // MARK: Functions
 
-    func invoke(_ compiled: CompiledFunction, arguments: [Expr], caller: Frame? = nil) async throws -> Value? {
+    func invoke(_ compiled: CompiledFunction, arguments: [Argument], caller: Frame? = nil) async throws -> Value? {
         let function = compiled.function
         guard arguments.count == function.parameters.count else {
             throw RuntimeError(.wrongArgumentCount(function: function.name, expected: function.parameters.count, found: arguments.count))
@@ -138,20 +143,22 @@ public final class Interpreter: @unchecked Sendable {
         if frames.count >= maxDepth { throw RuntimeError(.stackOverflow(limit: maxDepth)) }
 
         let frame = Frame(function: function.name)
-        for (parameter, argument) in zip(function.parameters, arguments) {
+        for (index, argument) in arguments.enumerated() {
+            let parameter = function.parameters[index]
+            let name = compiled.parameters[index]
             if parameter.isArray {
-                guard case .variable(let name) = argument.unwrapped, let caller,
-                      case .array(let storage) = try caller.slot(name) else {
+                guard let variable = argument.variable, let caller,
+                      case .array(let storage) = try caller.slot(variable) else {
                     throw RuntimeError(.argumentMustBeArray(function: function.name, parameter: parameter.name))
                 }
                 guard storage.type == parameter.type else {
                     throw RuntimeError(.argumentType(function: function.name, parameter: parameter.name,
                                                      expected: parameter.type, found: storage.type))
                 }
-                try frame.declare(parameter.name, .array(storage))
+                try frame.declare(name, .array(storage))
             } else {
                 guard let caller else { throw RuntimeError(.noMainFunction) }
-                let value = try await evaluate(argument, in: caller)
+                let value = try await evaluate(argument.value, in: caller)
                 let converted: Value
                 do {
                     converted = try convert(value, to: parameter.type, name: parameter.name)
@@ -159,34 +166,30 @@ public final class Interpreter: @unchecked Sendable {
                     throw RuntimeError(.argumentType(function: function.name, parameter: parameter.name,
                                                      expected: parameter.type, found: value.type))
                 }
-                try frame.declare(parameter.name, .scalar(Scalar(type: parameter.type, value: converted)))
+                try frame.declare(name, .scalar(Scalar(type: parameter.type, value: converted)))
             }
         }
 
-        let previousFunction = currentFunction
         frames.append(frame)
         if frames.count == 1 { mainFrame = frame }
-        currentFunction = function.name
-        defer {
-            if frames.count > 1 || mainFrame !== frame { frames.removeLast() }
-            currentFunction = previousFunction
-        }
+        // Main's frame stays visible after the program ends, for the variable watch.
+        defer { if frames.count > 1 || mainFrame !== frame { frames.removeLast() } }
 
         try await execute(compiled.body, in: frame)
 
         guard let returnType = function.returnType else { return nil }
-        let variable = function.returnVariable.trimmingCharacters(in: .whitespaces)
-        guard !variable.isEmpty, let slot = frame.slots[variable.lowercased()], case .scalar(let scalar) = slot else {
-            throw RuntimeError(.returnVariableMissing(function: function.name, variable: variable), functionName: function.name)
+        let variable = compiled.returnVariable
+        guard !variable.key.isEmpty, let slot = frame.slots[variable.key], case .scalar(let scalar) = slot else {
+            throw RuntimeError(.returnVariableMissing(function: function.name, variable: variable.display), functionName: function.name)
         }
         guard let value = scalar.value else {
-            throw RuntimeError(.unassignedVariable(variable), functionName: function.name)
+            throw RuntimeError(.unassignedVariable(variable.display), functionName: function.name)
         }
-        return try convert(value, to: returnType, name: variable)
+        return try convert(value, to: returnType, name: variable.display)
     }
 
-    func callUser(_ name: String, arguments: [Expr], in frame: Frame, needsValue: Bool) async throws -> Value? {
-        guard let compiled = functions[name.lowercased()] else { throw RuntimeError(.unknownFunction(name)) }
+    func callUser(_ name: Name, arguments: [Argument], in frame: Frame, needsValue: Bool) async throws -> Value? {
+        guard let compiled = functions[name.key] else { throw RuntimeError(.unknownFunction(name.display)) }
         if needsValue && compiled.function.returnType == nil { throw RuntimeError(.noReturnValue(compiled.function.name)) }
         return try await invoke(compiled, arguments: arguments, caller: frame)
     }
@@ -208,11 +211,21 @@ public final class Interpreter: @unchecked Sendable {
     }
 
     func checkpoint(_ statement: CompiledStatement, in frame: Frame, breakpoint: Bool = false) async throws {
-        try await controller.checkpoint(statement.id, function: frame.function, breakpoint: breakpoint) { snapshot() }
-        let now = ContinuousClock.now
-        if now - lastSnapshot > .milliseconds(120) {
-            lastSnapshot = now
-            controller.emit(.variables(snapshot()))
+        if controller.isBacklogged { try await controller.waitForBacklog() }
+        let gate = controller.gate(breakpoint: breakpoint)
+        if case .run(let delay) = gate, delay == .zero {
+            // Full speed: nothing to wait for.
+        } else {
+            try await controller.pass(gate, at: statement.id, function: frame.function) { snapshot() }
+        }
+        // Reading the clock every eighth shape is plenty for an update every 120 ms.
+        checkpointCount &+= 1
+        if checkpointCount & 7 == 0 {
+            let now = ContinuousClock.now
+            if now - lastSnapshot > .milliseconds(120) {
+                lastSnapshot = now
+                controller.emit(.variables(snapshot()))
+            }
         }
     }
 
@@ -236,7 +249,7 @@ public final class Interpreter: @unchecked Sendable {
         case .declare(let names, let type, let sizeExpr):
             if let sizeExpr {
                 let size = try integer(try await evaluate(sizeExpr, in: frame), context: "Size")
-                guard size >= 0, size <= 10_000_000 else { throw RuntimeError(.invalidArraySize(size)) }
+                guard size >= 0, size <= 1_000_000 else { throw RuntimeError(.invalidArraySize(size)) }
                 for name in names { try frame.declare(name, .array(ArrayStorage(type: type, count: Int(size)))) }
             } else {
                 for name in names { try frame.declare(name, .scalar(Scalar(type: type))) }
@@ -249,7 +262,7 @@ public final class Interpreter: @unchecked Sendable {
         case .input(let target):
             let type = try targetType(target, in: frame)
             while true {
-                let text = try await controller.readInput(variable: target.display, type: type, statement: statement.id)
+                let text = try await controller.readInput(variable: target.name.display, type: type, statement: statement.id)
                 if let value = Interpreter.parseInput(text, as: type) {
                     try await store(value, into: target, in: frame)
                     break
@@ -281,10 +294,9 @@ public final class Interpreter: @unchecked Sendable {
             } while try await self.condition(condition, in: frame)
 
         case .forLoop(let name, let startExpr, let endExpr, let stepExpr, let decreasing, let body):
-            let target = LValue(name: name, index: nil)
-            let type = try targetType(target, in: frame)
-            guard type.isNumeric else {
-                throw RuntimeError(.cannotAssign(value: .integer, variable: name, variableType: type))
+            guard case .scalar(let counter) = try frame.slot(name) else { throw RuntimeError(.isAnArray(name.display)) }
+            guard counter.type.isNumeric else {
+                throw RuntimeError(.cannotAssign(value: .integer, variable: name.display, variableType: counter.type))
             }
             let start = try await evaluate(startExpr, in: frame)
             let end = try await evaluate(endExpr, in: frame)
@@ -296,20 +308,25 @@ public final class Interpreter: @unchecked Sendable {
             if increment == 0 { throw RuntimeError(.invalidArgument(function: "For")) }
             var current = startNumber
             while decreasing ? current >= endNumber : current <= endNumber {
-                let value: Value = type == .integer ? .integer(Int64(current)) : .real(current)
-                try await store(value, into: target, in: frame)
+                if counter.type == .integer {
+                    guard current.isFinite, let whole = Int64(exactly: current.rounded(.towardZero)) else { throw RuntimeError(.overflow) }
+                    counter.value = .integer(whole)
+                } else {
+                    counter.value = .real(current)
+                }
                 try await execute(body, in: frame)
                 try await checkpoint(statement, in: frame)
                 // Re-read the loop variable, so changes made in the body count, like in Flowgorithm.
-                guard case .scalar(let scalar) = try frame.slot(name), let now = scalar.value?.numeric else { break }
+                guard let now = counter.value?.numeric else { break }
                 current = now + increment
             }
 
-        case .call(let name, let arguments):
-            if Identifier.intrinsicNames.contains(name.lowercased()) {
-                _ = try await intrinsic(name, arguments, in: frame)
-            } else {
+        case .call(let node):
+            switch node {
+            case .call(let name, let arguments):
                 _ = try await callUser(name, arguments: arguments, in: frame, needsValue: false)
+            default:
+                _ = try await valueAsync(of: node, in: frame)
             }
 
         case .open(let expr, let mode):
@@ -340,12 +357,11 @@ public final class Interpreter: @unchecked Sendable {
             file = nil
 
         case .read(let target):
-            guard var open = file else { throw RuntimeError(.fileNotOpen) }
+            guard let open = file else { throw RuntimeError(.fileNotOpen) }
             guard open.mode == .read else { throw RuntimeError(.fileWrongMode) }
             guard open.nextLine < open.lines.count else { throw RuntimeError(.endOfFile) }
             let line = open.lines[open.nextLine]
-            open.nextLine += 1
-            file = open
+            file?.nextLine += 1
             let type = try targetType(target, in: frame)
             guard let value = Interpreter.parseInput(line, as: type) else {
                 throw RuntimeError(.invalidConversion(value: line, to: type))
@@ -414,31 +430,31 @@ public final class Interpreter: @unchecked Sendable {
 
     // MARK: Variables
 
-    func targetType(_ target: LValue, in frame: Frame) throws(RuntimeError) -> DataType {
+    func targetType(_ target: Target, in frame: Frame) throws(RuntimeError) -> DataType {
         switch try frame.slot(target.name) {
         case .scalar(let scalar):
-            if target.index != nil { throw RuntimeError(.notAnArray(target.name)) }
+            if target.index != nil { throw RuntimeError(.notAnArray(target.name.display)) }
             return scalar.type
         case .array(let array):
-            if target.index == nil { throw RuntimeError(.isAnArray(target.name)) }
+            if target.index == nil { throw RuntimeError(.isAnArray(target.name.display)) }
             return array.type
         }
     }
 
-    func store(_ value: Value, into target: LValue, in frame: Frame) async throws {
+    func store(_ value: Value, into target: Target, in frame: Frame) async throws {
         switch try frame.slot(target.name) {
         case .scalar(let scalar):
-            if target.index != nil { throw RuntimeError(.notAnArray(target.name)) }
-            scalar.value = try convert(value, to: scalar.type, name: target.name)
+            if target.index != nil { throw RuntimeError(.notAnArray(target.name.display)) }
+            scalar.value = try convert(value, to: scalar.type, name: target.name.display)
         case .array(let array):
-            guard let indexExpr = target.index else { throw RuntimeError(.isAnArray(target.name)) }
-            let index = try await arrayIndex(indexExpr, name: target.name, count: array.elements.count, in: frame)
-            array.elements[index] = try convert(value, to: array.type, name: target.name)
+            guard let indexExpr = target.index else { throw RuntimeError(.isAnArray(target.name.display)) }
+            let index = try arrayIndex(try await evaluate(indexExpr, in: frame), name: target.name.display, count: array.elements.count)
+            array.elements[index] = try convert(value, to: array.type, name: target.name.display)
         }
     }
 
-    func arrayIndex(_ expr: Expr, name: String, count: Int, in frame: Frame) async throws -> Int {
-        let index = try integer(try await evaluate(expr, in: frame), context: "[ ]")
+    func arrayIndex(_ value: Value, name: String, count: Int) throws(RuntimeError) -> Int {
+        let index = try integer(value, context: "[ ]")
         guard index >= 0, index < count else { throw RuntimeError(.indexOutOfBounds(name: name, index: index, size: count)) }
         return Int(index)
     }
@@ -480,7 +496,13 @@ public final class Interpreter: @unchecked Sendable {
 
     // MARK: Expressions
 
-    func condition(_ expr: Expr, in frame: Frame) async throws -> Bool {
+    /// Evaluates without suspending when the expression calls no user function, which is
+    /// almost always; only calls into flowchart functions need the asynchronous path.
+    func evaluate(_ expr: CompiledExpr, in frame: Frame) async throws -> Value {
+        expr.isPure ? try value(of: expr.node, in: frame) : try await valueAsync(of: expr.node, in: frame)
+    }
+
+    func condition(_ expr: CompiledExpr, in frame: Frame) async throws -> Bool {
         let value = try await evaluate(expr, in: frame)
         guard case .boolean(let b) = value else { throw RuntimeError(.conditionNotBoolean(value.type)) }
         return b
@@ -501,75 +523,112 @@ public final class Interpreter: @unchecked Sendable {
         return n
     }
 
-    func evaluate(_ expr: Expr, in frame: Frame) async throws -> Value {
-        switch expr {
-        case .integer(let v): return .integer(v)
-        case .real(let v): return .real(v)
-        case .string(let v): return .string(v)
-        case .boolean(let v): return .boolean(v)
-        case .pi: return .real(.pi)
-        case .group(let inner): return try await evaluate(inner, in: frame)
+    func scalarValue(_ name: Name, in frame: Frame) throws(RuntimeError) -> Value {
+        switch try frame.slot(name) {
+        case .scalar(let scalar):
+            guard let value = scalar.value else { throw RuntimeError(.unassignedVariable(name.display)) }
+            return value
+        case .array:
+            throw RuntimeError(.isAnArray(name.display))
+        }
+    }
 
+    func element(_ name: Name, index: Value, in frame: Frame) throws(RuntimeError) -> Value {
+        guard case .array(let array) = try frame.slot(name) else { throw RuntimeError(.notAnArray(name.display)) }
+        let position = try arrayIndex(index, name: name.display, count: array.elements.count)
+        guard let value = array.elements[position] else { throw RuntimeError(.unassignedVariable("\(name.display)[\(position)]")) }
+        return value
+    }
+
+    func boolean(_ value: Value, for op: Operator, left: DataType? = nil) throws(RuntimeError) -> Bool {
+        guard case .boolean(let b) = value else {
+            throw RuntimeError(.typeMismatch(operation: op.symbol, left: left ?? value.type, right: left == nil ? nil : value.type))
+        }
+        return b
+    }
+
+    /// The synchronous evaluator, for expressions without user function calls.
+    func value(of node: Node, in frame: Frame) throws -> Value {
+        switch node {
+        case .constant(let v):
+            return v
         case .variable(let name):
-            switch try frame.slot(name) {
-            case .scalar(let scalar):
-                guard let value = scalar.value else { throw RuntimeError(.unassignedVariable(name)) }
-                return value
-            case .array:
-                throw RuntimeError(.isAnArray(name))
+            return try scalarValue(name, in: frame)
+        case .element(let name, let index):
+            return try element(name, index: try value(of: index, in: frame), in: frame)
+        case .intrinsic(let function, let display, let arguments, let array):
+            if let special = try specialIntrinsic(function, display: display, count: arguments.count, array: array, in: frame) {
+                return special
             }
+            var values: [Value] = []
+            values.reserveCapacity(arguments.count)
+            for argument in arguments { values.append(try value(of: argument, in: frame)) }
+            return try intrinsic(function, display: display, values)
+        case .call(let name, _):
+            // Pure expressions never contain calls; kept as a clear error rather than a trap.
+            throw RuntimeError(.unknownFunction(name.display))
+        case .negate(let operand):
+            return try Interpreter.negate(try value(of: operand, in: frame))
+        case .not(let operand):
+            return .boolean(!(try boolean(try value(of: operand, in: frame), for: .not)))
+        case .and(let l, let r):
+            if !(try boolean(try value(of: l, in: frame), for: .and)) { return .boolean(false) }
+            return .boolean(try boolean(try value(of: r, in: frame), for: .and, left: .boolean))
+        case .or(let l, let r):
+            if try boolean(try value(of: l, in: frame), for: .or) { return .boolean(true) }
+            return .boolean(try boolean(try value(of: r, in: frame), for: .or, left: .boolean))
+        case .binary(let op, let l, let r):
+            let left = try value(of: l, in: frame)
+            return try Interpreter.apply(op, left, try value(of: r, in: frame))
+        }
+    }
 
-        case .element(let name, let indexExpr):
-            guard case .array(let array) = try frame.slot(name) else { throw RuntimeError(.notAnArray(name)) }
-            let index = try await arrayIndex(indexExpr, name: name, count: array.elements.count, in: frame)
-            guard let value = array.elements[index] else { throw RuntimeError(.unassignedVariable("\(name)[\(index)]")) }
-            return value
-
+    /// The general evaluator: the same rules, able to run flowchart functions.
+    func valueAsync(of node: Node, in frame: Frame) async throws -> Value {
+        switch node {
+        case .constant, .variable:
+            return try value(of: node, in: frame)
+        case .element(let name, let index):
+            return try element(name, index: try await valueAsync(of: index, in: frame), in: frame)
+        case .intrinsic(let function, let display, let arguments, let array):
+            if let special = try specialIntrinsic(function, display: display, count: arguments.count, array: array, in: frame) {
+                return special
+            }
+            var values: [Value] = []
+            values.reserveCapacity(arguments.count)
+            for argument in arguments { values.append(try await valueAsync(of: argument, in: frame)) }
+            return try intrinsic(function, display: display, values)
         case .call(let name, let arguments):
-            if Identifier.intrinsicNames.contains(name.lowercased()) {
-                return try await intrinsic(name, arguments, in: frame)
-            }
             guard let value = try await callUser(name, arguments: arguments, in: frame, needsValue: true) else {
-                throw RuntimeError(.noReturnValue(name))
+                throw RuntimeError(.noReturnValue(name.display))
             }
             return value
+        case .negate(let operand):
+            return try Interpreter.negate(try await valueAsync(of: operand, in: frame))
+        case .not(let operand):
+            return .boolean(!(try boolean(try await valueAsync(of: operand, in: frame), for: .not)))
+        case .and(let l, let r):
+            if !(try boolean(try await valueAsync(of: l, in: frame), for: .and)) { return .boolean(false) }
+            return .boolean(try boolean(try await valueAsync(of: r, in: frame), for: .and, left: .boolean))
+        case .or(let l, let r):
+            if try boolean(try await valueAsync(of: l, in: frame), for: .or) { return .boolean(true) }
+            return .boolean(try boolean(try await valueAsync(of: r, in: frame), for: .or, left: .boolean))
+        case .binary(let op, let l, let r):
+            let left = try await valueAsync(of: l, in: frame)
+            return try Interpreter.apply(op, left, try await valueAsync(of: r, in: frame))
+        }
+    }
 
-        case .unary(let op, let operand):
-            let value = try await evaluate(operand, in: frame)
-            switch (op, value) {
-            case (.minus, .integer(let v)):
-                let (result, overflow) = Int64(0).subtractingReportingOverflow(v)
-                if overflow { throw RuntimeError(.overflow) }
-                return .integer(result)
-            case (.minus, .real(let v)):
-                return .real(-v)
-            case (.not, .boolean(let v)):
-                return .boolean(!v)
-            default:
-                throw RuntimeError(.typeMismatch(operation: op.symbol, left: value.type, right: nil))
-            }
-
-        case .binary(.and, let lhs, let rhs):
-            guard case .boolean(let l) = try await evaluate(lhs, in: frame) else {
-                throw RuntimeError(.typeMismatch(operation: "and", left: try await evaluate(lhs, in: frame).type, right: nil))
-            }
-            if !l { return .boolean(false) }
-            let r = try await evaluate(rhs, in: frame)
-            guard case .boolean(let rb) = r else { throw RuntimeError(.typeMismatch(operation: "and", left: .boolean, right: r.type)) }
-            return .boolean(rb)
-
-        case .binary(.or, let lhs, let rhs):
-            let lv = try await evaluate(lhs, in: frame)
-            guard case .boolean(let l) = lv else { throw RuntimeError(.typeMismatch(operation: "or", left: lv.type, right: nil)) }
-            if l { return .boolean(true) }
-            let r = try await evaluate(rhs, in: frame)
-            guard case .boolean(let rb) = r else { throw RuntimeError(.typeMismatch(operation: "or", left: .boolean, right: r.type)) }
-            return .boolean(rb)
-
-        case .binary(let op, let lhs, let rhs):
-            let l = try await evaluate(lhs, in: frame)
-            let r = try await evaluate(rhs, in: frame)
-            return try Interpreter.apply(op, l, r)
+    static func negate(_ value: Value) throws(RuntimeError) -> Value {
+        switch value {
+        case .integer(let v):
+            let (result, overflow) = Int64(0).subtractingReportingOverflow(v)
+            if overflow { throw RuntimeError(.overflow) }
+            return .integer(result)
+        case .real(let v):
+            return .real(-v)
+        default:
+            throw RuntimeError(.typeMismatch(operation: Operator.minus.symbol, left: value.type, right: nil))
         }
     }
 
@@ -624,13 +683,11 @@ public final class Interpreter: @unchecked Sendable {
             case (.boolean(let a), .boolean(let b)):
                 guard op == .equal || op == .notEqual else { throw mismatch() }
                 order = a == b ? .orderedSame : .orderedAscending
+            case (.integer(let a), .integer(let b)):
+                order = a == b ? .orderedSame : (a < b ? .orderedAscending : .orderedDescending)
             default:
-                if case .integer(let a) = l, case .integer(let b) = r {
-                    order = a == b ? .orderedSame : (a < b ? .orderedAscending : .orderedDescending)
-                } else {
-                    guard let a = l.numeric, let b = r.numeric else { throw mismatch() }
-                    order = a == b ? .orderedSame : (a < b ? .orderedAscending : .orderedDescending)
-                }
+                guard let a = l.numeric, let b = r.numeric else { throw mismatch() }
+                order = a == b ? .orderedSame : (a < b ? .orderedAscending : .orderedDescending)
             }
             let result = switch op {
             case .equal: order == .orderedSame
@@ -654,10 +711,6 @@ extension Expr {
         if case .group(let inner) = self { return inner.unwrapped }
         return self
     }
-}
-
-extension LValue {
-    var display: String { name }
 }
 
 extension Operator {

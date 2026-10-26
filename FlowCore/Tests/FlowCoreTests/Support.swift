@@ -20,6 +20,7 @@ func run(_ program: Program, inputs: [String] = [], baseDirectory: URL? = nil) a
 
     async let done: Void = interpreter.run()
     for await event in controller.events {
+        defer { controller.didHandleEvent() }
         switch event {
         case .output(let text, let newline):
             output += text + (newline ? "\n" : "")

@@ -11,7 +11,6 @@ struct DocumentActions {
     var isRunning: Bool
     var isPaused: Bool
     var hasSelection: Bool
-    var canPaste: Bool
     var cut: () -> Void
     var copy: () -> Void
     var paste: () -> Void
@@ -22,6 +21,8 @@ struct DocumentActions {
     var resetZoom: () -> Void
     var showPanel: (PanelTab) -> Void
     var toggleInspector: () -> Void
+    var toggleBottomPanel: () -> Void
+    var showsBottomPanel: Bool
     var addFunction: () -> Void
     var programInfo: () -> Void
     var export: (ChartExporter.Format) -> Void
@@ -55,12 +56,24 @@ struct DocumentView: View {
     @AppStorage(SettingsKey.maxStack) private var maxStack = 5000
     @AppStorage(SettingsKey.fontSize) private var fontSize = 13.0
     @AppStorage(SettingsKey.compactLayout) private var compact = false
+    @AppStorage(SettingsKey.showsInspector) private var savedShowsInspector = true
+    @AppStorage(SettingsKey.showsSidebar) private var showsSidebar = true
+    @AppStorage(SettingsKey.topPanel) private var savedTopPanel = PanelTab.console.rawValue
+    @AppStorage(SettingsKey.bottomPanel) private var savedBottomPanel = PanelTab.variables.rawValue
+    @AppStorage(SettingsKey.showsBottomPanel) private var savedShowsBottomPanel = true
+    @AppStorage(SettingsKey.zoom) private var savedZoom = 1.0
+    @AppStorage(SettingsKey.ignoreBreakpoints) private var savedIgnoreBreakpoints = false
 
     var theme: Theme { Theme.named(themeID) }
+
+    var sidebarVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(get: { showsSidebar ? .all : .detailOnly },
+                set: { showsSidebar = $0 != .detailOnly })
+    }
     var locked: Bool { session.state.isActive }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: sidebarVisibility) {
             SidebarView(program: $document.program, editor: editor, locked: locked)
         } detail: {
             FlowchartView(program: $document.program, editor: editor, session: session)
@@ -98,9 +111,25 @@ struct DocumentView: View {
         }
         .onAppear {
             session.speed = savedSpeed
+            session.ignoreBreakpoints = savedIgnoreBreakpoints
+            editor.showsInspector = savedShowsInspector
+            editor.topPanel = PanelTab(rawValue: savedTopPanel) ?? .console
+            editor.bottomPanel = PanelTab(rawValue: savedBottomPanel) ?? .variables
+            editor.showsBottomPanel = savedShowsBottomPanel
+            editor.zoom = min(EditorModel.maxZoom, max(EditorModel.minZoom, savedZoom))
             if editor.functionID == nil { editor.functionID = document.program.main?.id }
         }
+        .onDisappear {
+            // A closed window must not keep a program running in the background.
+            session.stop()
+        }
         .onChange(of: session.speed) { _, speed in savedSpeed = speed }
+        .onChange(of: session.ignoreBreakpoints) { _, ignore in savedIgnoreBreakpoints = ignore }
+        .onChange(of: editor.showsInspector) { _, shows in savedShowsInspector = shows }
+        .onChange(of: editor.topPanel) { _, tab in savedTopPanel = tab.rawValue }
+        .onChange(of: editor.bottomPanel) { _, tab in savedBottomPanel = tab.rawValue }
+        .onChange(of: editor.showsBottomPanel) { _, shows in savedShowsBottomPanel = shows }
+        .onChange(of: editor.zoom) { _, zoom in savedZoom = zoom }
         .onChange(of: session.state) { _, state in
             switch state {
             case .waitingForInput: editor.show(.console)
@@ -123,12 +152,16 @@ struct DocumentView: View {
         if let error = Interpreter.check(document.program) {
             reveal(error)
         }
-        editor.show(.console)
+        editor.show(usesTurtle ? .turtle : .console)
         session.run(document.program, baseDirectory: baseDirectory, maxDepth: maxStack)
     }
 
+    var usesTurtle: Bool {
+        document.program.functions.contains { $0.body.flattened.contains { $0.category == .turtle } }
+    }
+
     func step() {
-        if !session.state.isActive { editor.show(.console) }
+        if !session.state.isActive { editor.show(usesTurtle ? .turtle : .console) }
         session.step(document.program, baseDirectory: baseDirectory, maxDepth: maxStack)
     }
 
@@ -151,7 +184,6 @@ struct DocumentView: View {
             isRunning: session.state.isActive,
             isPaused: session.state == .paused,
             hasSelection: editor.selection != nil,
-            canPaste: editor.canPaste,
             cut: { if let id = editor.selection, !locked { editor.cut(id, in: $document.program) } },
             copy: { if let id = editor.selection { editor.copy(id, in: document.program) } },
             paste: { if !locked { editor.paste(in: $document.program) } },
@@ -162,6 +194,8 @@ struct DocumentView: View {
             resetZoom: { withAnimation(.snappy) { editor.resetZoom() } },
             showPanel: { editor.show($0) },
             toggleInspector: { editor.showsInspector.toggle() },
+            toggleBottomPanel: { editor.showsBottomPanel.toggle() },
+            showsBottomPanel: editor.showsBottomPanel,
             addFunction: { editor.isAddingFunction = true },
             programInfo: { editor.showsProgramInfo = true },
             export: { exportChart($0) },
@@ -343,13 +377,12 @@ struct StatusChip: View {
                 .fill(color)
                 .frame(width: 8, height: 8)
                 .shadow(color: color.opacity(session.state == .running ? 0.8 : 0), radius: 4)
-                .symbolEffect(.pulse, isActive: session.state == .running)
             Text(session.statusText)
                 .font(.callout.weight(.medium))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
-        .animation(.snappy, value: session.state)
+        .frame(minWidth: 150)
     }
 }
 
@@ -359,13 +392,14 @@ struct SpeedControl: View {
 
     var body: some View {
         Menu {
-            Section("Speed") {
-                Button("Full speed") { session.speed = 1 }
-                Button("Fast") { session.speed = 0.75 }
-                Button("Medium") { session.speed = 0.5 }
-                Button("Slow") { session.speed = 0.25 }
-                Button("Very slow") { session.speed = 0 }
+            Picker("Speed", selection: $session.speed) {
+                Text("Full speed").tag(1.0)
+                Text("Fast").tag(0.75)
+                Text("Medium").tag(0.5)
+                Text("Slow").tag(0.25)
+                Text("Very slow").tag(0.0)
             }
+            .pickerStyle(.inline)
             Divider()
             Toggle("Ignore breakpoints", isOn: $session.ignoreBreakpoints)
         } label: {

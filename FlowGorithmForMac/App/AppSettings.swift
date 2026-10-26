@@ -11,6 +11,14 @@ enum SettingsKey {
     static let sourceLanguage = "sourceLanguage"
     static let compactLayout = "compactLayout"
     static let maxStack = "maxStack"
+    // Window layout, restored the next time a flowchart opens.
+    static let showsInspector = "ui.showsInspector"
+    static let showsSidebar = "ui.showsSidebar"
+    static let topPanel = "ui.topPanel"
+    static let bottomPanel = "ui.bottomPanel"
+    static let showsBottomPanel = "ui.showsBottomPanel"
+    static let zoom = "ui.zoom"
+    static let ignoreBreakpoints = "ignoreBreakpoints"
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable {

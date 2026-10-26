@@ -33,12 +33,21 @@ struct ShapePalette {
     var fillEnd: Color
     var stroke: Color
     var text: Color
+    /// Only some themes use gradients; a flat color is cheaper to draw.
+    let isGradient: Bool
 
     init(fill: Color, fillEnd: Color? = nil, stroke: Color, text: Color) {
         self.fill = fill
         self.fillEnd = fillEnd ?? fill
         self.stroke = stroke
         self.text = text
+        isGradient = fillEnd != nil && fillEnd != fill
+    }
+
+    var fillStyle: AnyShapeStyle {
+        isGradient
+            ? AnyShapeStyle(LinearGradient(colors: [fill, fillEnd], startPoint: .top, endPoint: .bottom))
+            : AnyShapeStyle(fill)
     }
 }
 

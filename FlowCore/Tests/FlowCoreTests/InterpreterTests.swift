@@ -206,6 +206,24 @@ struct InterpreterTests {
         #expect(pauses == 2)
     }
 
+    @Test func fastOutputStaysBounded() async {
+        let p = program([
+            declare("i", .integer),
+            Statement(.for(.init(variable: "i", start: "1", end: "50000", body: [output("i")]))),
+        ])
+        let result = await run(p)
+        #expect(result.error == nil)
+        #expect(result.output.hasSuffix("50000\n"))
+    }
+
+    @Test func hugeForBoundsAreAnErrorNotACrash() async {
+        let p = program([
+            declare("i", .integer),
+            Statement(.for(.init(variable: "i", start: "1e30", end: "1e31", body: []))),
+        ])
+        #expect(await run(p).error?.kind == .overflow)
+    }
+
     @Test func stopEndsAnInfiniteLoop() async {
         let controller = ExecutionController()
         let p = program([Statement(.while(.init(expression: "true", body: [Statement(.comment(.init(text: "spin")))])))])
