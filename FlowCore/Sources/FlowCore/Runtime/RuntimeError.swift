@@ -1,3 +1,6 @@
+// FlowGorithmForMac · Copyright © 2026 SkryxDev
+// GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 import Foundation
 
 /// An error raised while checking or running a program. The app turns `kind` into a localized message.

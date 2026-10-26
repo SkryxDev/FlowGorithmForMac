@@ -1,4 +1,7 @@
 #!/bin/sh
+# FlowGorithmForMac · Copyright © 2026 SkryxDev
+# GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 # Builds dist/FlowGorithmForMac-<version>.dmg: the app next to a link to Applications.
 # Usage: Scripts/make-dmg.sh <version>   (e.g. 1.0.0-beta). Build the Release app first.
 #

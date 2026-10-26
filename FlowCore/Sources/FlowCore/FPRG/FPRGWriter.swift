@@ -1,3 +1,6 @@
+// FlowGorithmForMac · Copyright © 2026 SkryxDev
+// GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 import Foundation
 
 /// Writes programs in the `.fprg` XML format, laid out the same way Flowgorithm does.

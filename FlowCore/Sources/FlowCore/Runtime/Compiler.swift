@@ -1,3 +1,6 @@
+// FlowGorithmForMac · Copyright © 2026 SkryxDev
+// GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 import Foundation
 
 /// A name as the user typed it (for messages) with its case-insensitive lookup key,

@@ -316,5 +316,9 @@
   "“%@” isn't an array, so it can't be used with [ ].": "“%@” non è un array, quindi non si può usare con [ ].",
   "“%@” needs %lld arguments, but got %lld.": "“%1$@” richiede %2$lld argomenti, ma ne ha ricevuti %3$lld.",
   "“%@”: this flowchart isn't saved yet, so every file needs your permission. Allow only if you trust whoever made it.": "“%@”: questo diagramma non è ancora salvato, quindi ogni file richiede il tuo permesso. Consenti solo se ti fidi di chi l'ha creato.",
-  "…and %lld more": "…e altri %lld"
+  "…and %lld more": "…e altri %lld",
+  "About FlowGorithmForMac": "Informazioni su FlowGorithmForMac",
+  "Made by SkryxDev": "Creato da SkryxDev",
+  "Free software under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html), with the attribution terms in its [NOTICE](https://github.com/SkryxDev/FlowGorithmForMac/blob/main/NOTICE) file: you can share and modify it under those terms. It comes with no warranty.": "Software libero distribuito con la [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html) e i termini di attribuzione del file [NOTICE](https://github.com/SkryxDev/FlowGorithmForMac/blob/main/NOTICE): puoi condividerlo e modificarlo rispettando questi termini. È fornito senza alcuna garanzia.",
+  "Not affiliated with Flowgorithm or its author.": "Non affiliato a Flowgorithm né al suo autore."
 }

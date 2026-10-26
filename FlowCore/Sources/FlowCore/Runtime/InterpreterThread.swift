@@ -1,3 +1,6 @@
+// FlowGorithmForMac · Copyright © 2026 SkryxDev
+// GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 import Foundation
 
 /// Runs one program's tasks on a thread of its own with a large stack.

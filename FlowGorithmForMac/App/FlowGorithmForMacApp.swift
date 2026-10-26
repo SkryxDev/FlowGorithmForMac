@@ -1,3 +1,6 @@
+// FlowGorithmForMac · Copyright © 2026 SkryxDev
+// GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 import AppKit
 import FlowCore
 import SwiftUI
@@ -41,7 +44,32 @@ struct AppCommands: Commands {
         NSApp.sendAction(selector, to: nil, from: nil)
     }
 
+    /// The standard About panel with the author's credit and the license notices, which the
+    /// additional terms in NOTICE ask every copy of the app to keep showing.
+    private func showAbout() {
+        var link = AttributedString("github.com/SkryxDev/FlowGorithmForMac")
+        link.link = URL(string: "https://github.com/SkryxDev/FlowGorithmForMac")
+        var credits = AttributedString(localized: "Made by SkryxDev")
+        credits += AttributedString("\n") + link + AttributedString("\n\n")
+        credits += AttributedString(localized: "Free software under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html), with the attribution terms in its [NOTICE](https://github.com/SkryxDev/FlowGorithmForMac/blob/main/NOTICE) file: you can share and modify it under those terms. It comes with no warranty.")
+        credits += AttributedString("\n\n")
+        credits += AttributedString(localized: "Not affiliated with Flowgorithm or its author.")
+
+        let text = NSMutableAttributedString(credits)
+        let centered = NSMutableParagraphStyle()
+        centered.alignment = .center
+        text.addAttributes([.font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+                            .foregroundColor: NSColor.secondaryLabelColor,
+                            .paragraphStyle: centered],
+                           range: NSRange(location: 0, length: text.length))
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: text])
+    }
+
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About FlowGorithmForMac") { showAbout() }
+        }
+
         CommandGroup(after: .saveItem) {
             Divider()
             Menu("Export Flowchart") {

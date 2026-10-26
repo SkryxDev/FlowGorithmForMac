@@ -1,3 +1,6 @@
+// FlowGorithmForMac · Copyright © 2026 SkryxDev
+// GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 // Draws the white flowchart glyph used as the layer of AppIcon.icon.
 // Usage: swift Scripts/make-icon-glyph.swift <output-folder>
 import AppKit

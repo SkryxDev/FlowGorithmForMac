@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# FlowGorithmForMac · Copyright © 2026 SkryxDev
+# GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
+
 """Rebuilds FlowGorithmForMac/Localizable.xcstrings from the strings the compiler extracted.
 
 Xcode keeps the catalog in sync when building in the IDE; command-line builds don't,

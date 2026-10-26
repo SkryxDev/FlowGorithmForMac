@@ -49,3 +49,7 @@ python3 Scripts/sync-strings.py build/DerivedData
 ```
 
 Italian texts live in `Scripts/translations-it.json`. The script lists any string still missing a translation.
+
+## License
+
+FlowGorithmForMac is free software by SkryxDev, released under the [GNU General Public License version 3](LICENSE) with the additional attribution terms in [NOTICE](NOTICE). Anyone can use, study, share and modify it. Whoever distributes it, modified or not, must share the source under the same license and preserve the credit "Based on FlowGorithmForMac by SkryxDev", showing it in the app's About window or a similar screen. The app comes with no warranty.

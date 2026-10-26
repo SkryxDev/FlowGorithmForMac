@@ -151,6 +151,16 @@
         }
       }
     },
+    "About FlowGorithmForMac": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informazioni su FlowGorithmForMac"
+          }
+        }
+      }
+    },
     "Access to “%@” was blocked.": {
       "localizations": {
         "it": {
@@ -1147,6 +1157,16 @@
         }
       }
     },
+    "Free software under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html), with the attribution terms in its [NOTICE](https://github.com/SkryxDev/FlowGorithmForMac/blob/main/NOTICE) file: you can share and modify it under those terms. It comes with no warranty.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Software libero distribuito con la [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html) e i termini di attribuzione del file [NOTICE](https://github.com/SkryxDev/FlowGorithmForMac/blob/main/NOTICE): puoi condividerlo e modificarlo rispettando questi termini. È fornito senza alcuna garanzia."
+          }
+        }
+      }
+    },
     "Full speed": {
       "localizations": {
         "it": {
@@ -1403,6 +1423,16 @@
         }
       }
     },
+    "Made by SkryxDev": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creato da SkryxDev"
+          }
+        }
+      }
+    },
     "Main": {
       "localizations": {
         "it": {
@@ -1569,6 +1599,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ancora nessun valore"
+          }
+        }
+      }
+    },
+    "Not affiliated with Flowgorithm or its author.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non affiliato a Flowgorithm né al suo autore."
           }
         }
       }
