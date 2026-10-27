@@ -53,10 +53,10 @@ assignments move freely between a Windows PC at school and a Mac at home.
 
 | Keys | Action |
 | --- | --- |
-| <kbd>⌘</kbd><kbd>R</kbd> | Run, or continue after a pause |
-| <kbd>⌘</kbd><kbd>'</kbd> | Step to the next shape |
-| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>P</kbd> | Pause |
-| <kbd>⌘</kbd><kbd>.</kbd> | Stop |
+| <kbd>⌘</kbd><kbd>R</kbd> or <kbd>F5</kbd> | Run, or continue after a pause |
+| <kbd>⌘</kbd><kbd>'</kbd> or <kbd>F6</kbd> | Step to the next shape |
+| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>P</kbd> or <kbd>F7</kbd> | Pause |
+| <kbd>⌘</kbd><kbd>.</kbd> or <kbd>F8</kbd> | Stop |
 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd> | Add a function |
 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd> | Program info (name, author, description) |
 | <kbd>⌘</kbd><kbd>X</kbd> <kbd>⌘</kbd><kbd>C</kbd> <kbd>⌘</kbd><kbd>V</kbd> | Cut, copy and paste shapes |
@@ -64,6 +64,7 @@ assignments move freely between a Windows PC at school and a Mac at home.
 | <kbd>⌫</kbd> | Delete the selected shape |
 | <kbd>⌘</kbd><kbd>+</kbd> <kbd>⌘</kbd><kbd>-</kbd> <kbd>⌘</kbd><kbd>0</kbd> | Zoom in, zoom out, actual size (or pinch) |
 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>1</kbd> … <kbd>⌥</kbd><kbd>⌘</kbd><kbd>4</kbd> | Show the console, variables, turtle or source code |
+| <kbd>F9</kbd> <kbd>F10</kbd> <kbd>F11</kbd> <kbd>F12</kbd> | Show the variables, console, turtle or source code, as in Flowgorithm |
 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>I</kbd> | Show or hide the panels |
 | <kbd>⌘</kbd><kbd>P</kbd> | Print the flowchart |
 | <kbd>esc</kbd> | Close the insert menu |
