@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.jpg" width="900" alt="A flowchart that averages three test scores, with its console output and the Python code generated from it">
+  <img src="docs/screenshot.jpg" width="900" alt="A flowchart that averages three test scores, with the AI assistant explaining it, its console output and the Python code generated from it">
 </p>
 
 ---
