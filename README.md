@@ -79,7 +79,7 @@ saves the chart as an image.
 
 ## Install
 
-1. Download **FlowGorithmForMac-1.0.0-beta.dmg** from the
+1. Download **FlowGorithmForMac-1.1.0-beta.dmg** from the
    [latest release](https://github.com/SkryxDev/FlowGorithmForMac/releases/latest).
 2. Open it and drag **FlowGorithmForMac** into **Applications**.
 3. The app is not notarized yet, so macOS blocks it the first time. Open it once, then go to
@@ -161,7 +161,7 @@ cd FlowCore && swift test
 To build the drag-to-install disk image used for releases:
 
 ```bash
-Scripts/make-dmg.sh 1.0.0-beta
+Scripts/make-dmg.sh 1.1.0-beta
 ```
 
 The image is written to `dist/FlowGorithmForMac-<version>.dmg` and its SHA-256 is printed. The app is signed
