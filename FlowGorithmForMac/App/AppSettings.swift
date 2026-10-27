@@ -25,6 +25,8 @@ nonisolated enum SettingsKey {
     static let ignoreBreakpoints = "ignoreBreakpoints"
     /// Whether new flowcharts get the Mac account's full name as author. On by default, as in Flowgorithm.
     static let fillAuthor = "fillAuthorName"
+    /// How the AI assistant helps: hints only, or changes to the chart.
+    static let aiMode = "ai.mode"
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable {

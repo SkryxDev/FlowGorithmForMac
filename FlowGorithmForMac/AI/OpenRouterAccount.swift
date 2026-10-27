@@ -31,7 +31,7 @@ enum OpenRouterError: LocalizedError {
         case .keyRevoked:
             String(localized: "OpenRouter no longer accepts this app's key. Sign in again.")
         case .dailyLimit(let reset):
-            String(localized: "You've used today's free requests. They come back at \(reset.formatted(date: .omitted, time: .shortened)).")
+            String(localized: "You've used today's free requests. They come back at \(reset.formatted(date: .omitted, time: .shortened)), \(reset.formatted(.relative(presentation: .named))).")
         case .busy:
             String(localized: "The free models are busy right now. Try again in a minute.")
         case .refused(let status, let message):

@@ -5,7 +5,7 @@ import FlowCore
 import SwiftUI
 
 nonisolated enum NodeHighlight: Equatable {
-    case none, selected, executing, error
+    case none, selected, executing, error, changed
 }
 
 /// One flowchart shape: outline, fill, detail lines and its label.
@@ -78,7 +78,31 @@ struct ShapeView: View {
                 .stroke(Color.red, lineWidth: 3 * scale)
                 .padding(-3 * scale)
                 .shadow(color: .red.opacity(0.6), radius: 6 * scale)
+        case .changed:
+            ChangedRing(outline: outline, scale: scale)
         }
+    }
+}
+
+/// A purple glow around a shape the assistant just added or changed, which fades in and out.
+struct ChangedRing: View {
+    let outline: NodeOutline
+    let scale: CGFloat
+    @State private var shown = false
+
+    var body: some View {
+        ZStack {
+            outline
+                .fill(Color.purple.opacity(0.14))
+            outline
+                .stroke(Color.purple, lineWidth: 3 * scale)
+                .padding(-4 * scale)
+                .shadow(color: .purple.opacity(0.8), radius: 8 * scale)
+        }
+        .opacity(shown ? 1 : 0)
+        .scaleEffect(shown ? 1 : 1.08)
+        .onAppear { withAnimation(.snappy(duration: 0.35)) { shown = true } }
+        .allowsHitTesting(false)
     }
 }
 

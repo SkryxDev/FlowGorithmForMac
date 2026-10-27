@@ -83,7 +83,7 @@ saves the chart as an image.
 
 ## Install
 
-1. Download **FlowGorithmForMac-1.1.0-beta.dmg** from the
+1. Download **FlowGorithmForMac-1.1.1-beta.dmg** from the
    [latest release](https://github.com/SkryxDev/FlowGorithmForMac/releases/latest).
 2. Open it and drag **FlowGorithmForMac** into **Applications**.
 3. The app is not notarized yet, so macOS blocks it the first time. Open it once, then go to
@@ -98,8 +98,14 @@ ready to edit and save.
 
 ## AI assistant
 
-The assistant lives in the column on the left (the sidebar button shows or hides it). It answers in the
-app's language, Italian or English.
+The assistant lives in the column on the left (the sidebar button shows or hides it, and
+<kbd>⌘</kbd><kbd>L</kbd> jumps to its message field). It answers in the app's language, Italian or English.
+
+A switch at its top picks how it helps:
+
+- **Study Mode** (switch to the left, teal) — for learning. The assistant explains, points at the shape to
+  look at and gives one hint at a time, but never changes the chart and never writes the solution.
+- **Auto Mode** (switch to the right) — the assistant adds, edits, moves and deletes shapes for you.
 
 - **Sign in once** with **Sign In with OpenRouter**: the browser opens, you log in to
   [OpenRouter](https://openrouter.ai) with Google or an email and authorize the app. There's no API key to
@@ -111,13 +117,22 @@ app's language, Italian or English.
   for the percentage and the reset time. The limit belongs to your OpenRouter account, not to the app.
 - **One request per message** — the model gets the whole chart and makes every change in one reply. It's
   asked again only when a change fails a check, at most twice.
-- **Live and undoable** — changes appear on the chart as they're made, and one <kbd>⌘</kbd><kbd>Z</kbd>
-  takes back everything a reply did.
+- **Live and undoable** — changed shapes glow for a moment on the chart, each change in the chat shows its
+  shape when clicked, and the **Undo** button under a reply, or one <kbd>⌘</kbd><kbd>Z</kbd>, takes back
+  everything it did.
 - **Checked before you run** — after each reply the app checks the chart the way the interpreter would:
   variables declared twice, inside a loop or never, unknown functions, and values of the wrong type
   (a number used with `or`, text added with `+`). New problems go straight back to the model to fix.
-- **Fix with AI** — when a run stops with an error, the error banner and the assistant offer to fix it:
-  the app writes the request, with the function and the shape where it happened.
+- **Fix with AI** — when a run stops with an error, the error banner and the assistant offer to fix it
+  (or, in Study Mode, to give a hint): the app writes the request, with the function and the shape where it
+  happened.
+- **Ask from the chart** — right-click a shape for **Explain with AI**, or **What's Wrong Here?** when the
+  app marks it with a problem.
+- **Fix a field while you type** — when an expression in the shape editor has a mistake, **Fix with AI**
+  next to it corrects the field (in Study Mode, **Hint** explains the mistake instead).
+- **Wrong result or endless loop** — after a run that ends without errors, *The result isn't what you
+  expected?* asks what it should have shown and looks for the mistake; a program that keeps running for a
+  while shows a banner that stops it and asks the assistant why it doesn't end.
 
 Your flowchart and your messages are sent to OpenRouter and to the model's provider; free models may use
 them to improve. FlowGorithmForMac isn't affiliated with OpenRouter or Google.
@@ -165,7 +180,7 @@ cd FlowCore && swift test
 To build the drag-to-install disk image used for releases:
 
 ```bash
-Scripts/make-dmg.sh 1.1.0-beta
+Scripts/make-dmg.sh 1.1.1-beta
 ```
 
 The image is written to `dist/FlowGorithmForMac-<version>.dmg` and its SHA-256 is printed. The app is signed

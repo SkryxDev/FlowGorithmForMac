@@ -16,6 +16,7 @@ struct FlowchartView: View {
     @AppStorage(SettingsKey.showGrid) private var showsGrid = true
     @AppStorage(SettingsKey.compactLayout) private var compact = false
     @FocusState private var focused: Bool
+    @Environment(\.aiActions) private var aiActions
     /// Live pinch factor, shown as a cheap transform; the real zoom (a new layout) is applied when the pinch ends.
     @State private var pinch: CGFloat = 1
     @State private var dropTarget: String?
@@ -171,6 +172,7 @@ struct FlowchartView: View {
         guard let id = node.statement?.id else { return .none }
         if session.state == .failed, session.error?.statementID == id { return .error }
         if session.state.isActive, session.currentStatement == id { return .executing }
+        if editor.flashing.contains(id) { return .changed }
         if editor.selection == id { return .selected }
         return .none
     }
@@ -242,6 +244,17 @@ struct FlowchartView: View {
         if let statement = node.statement {
             Button("Edit…", systemImage: "pencil") { editor.editingStatement = statement }
                 .disabled(locked || statement.template == nil)
+            if let aiActions, aiActions.isAvailable {
+                Divider()
+                Button("Explain with AI", systemImage: "sparkles") {
+                    aiActions.ask(.explainShape(statement.id, label: node.label))
+                }
+                if let problem = problem(of: node, statement: statement) {
+                    Button("What's Wrong Here?", systemImage: "questionmark.bubble") {
+                        aiActions.ask(.shapeProblem(statement.id, label: node.label, problem: problem))
+                    }
+                }
+            }
             Divider()
             Button("Cut", systemImage: "scissors") { editor.cut(statement.id, in: $program) }.disabled(locked)
             Button("Copy", systemImage: "doc.on.doc") { editor.copy(statement.id, in: program) }
@@ -260,6 +273,16 @@ struct FlowchartView: View {
             Button("Edit Function…", systemImage: "function") { editor.editingFunction = function }
                 .disabled(locked)
         }
+    }
+
+    /// What the app finds wrong with a shape: the error the last run stopped on, a mistake in its
+    /// text, or an empty field.
+    func problem(of node: ChartNode, statement: Statement) -> String? {
+        if session.state == .failed, let error = session.error, error.statementID == statement.id {
+            return ErrorText.message(error)
+        }
+        if let problem = node.problem { return problem }
+        return node.incomplete ? String(localized: "A required field is empty.") : nil
     }
 
     func handleDrop(_ providers: [NSItemProvider], at point: InsertionPoint) -> Bool {

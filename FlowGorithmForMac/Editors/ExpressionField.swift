@@ -18,6 +18,10 @@ struct ExpressionField: View {
     var variables: [VariablesSnapshot.Variable] = []
 
     @FocusState private var focused: Bool
+    @AppStorage(SettingsKey.aiMode) private var aiMode = AIMode.auto.rawValue
+    @State private var helping = false
+    /// A hint from the assistant in study mode, or why it couldn't help.
+    @State private var aiNote: (text: String, failed: Bool)?
 
     var problem: String? {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
@@ -81,13 +85,71 @@ struct ExpressionField: View {
                 }
             }
             if let problem {
-                Label(problem, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .transition(.opacity)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Label(problem, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    if OpenRouterAccount.shared.status == .signedIn {
+                        aiButton(problem)
+                    }
+                }
+                .transition(.opacity)
+            }
+            if let aiNote {
+                Label {
+                    Text(MarkdownText.inline(aiNote.text))
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: aiNote.failed ? "exclamationmark.bubble" : "graduationcap.fill")
+                }
+                .font(.caption)
+                .foregroundStyle(aiNote.failed ? AnyShapeStyle(.secondary) : AnyShapeStyle(AIMode.study.color))
+                .transition(.opacity)
             }
         }
         .animation(.snappy(duration: 0.2), value: problem)
+        .animation(.snappy(duration: 0.2), value: aiNote?.text)
+        .onChange(of: text) { if !helping { aiNote = nil } }
+    }
+
+    var mode: AIMode { AIMode(rawValue: aiMode) ?? .auto }
+
+    @ViewBuilder
+    func aiButton(_ problem: String) -> some View {
+        if helping {
+            ProgressView().controlSize(.mini)
+        } else {
+            Button {
+                askAssistant(problem)
+            } label: {
+                Label(mode == .study ? "Hint" : "Fix with AI", systemImage: mode == .study ? "graduationcap" : "sparkles")
+                    .font(.caption.weight(.medium))
+            }
+            .buttonStyle(.borderless)
+            .help(mode == .study ? "Ask the assistant for a hint about this mistake" : "Let the assistant correct this field")
+        }
+    }
+
+    func askAssistant(_ problem: String) {
+        helping = true
+        aiNote = nil
+        let request = (text, kind, variables, mode)
+        Task {
+            defer { helping = false }
+            do {
+                let answer = try await ExpressionHelper.help(text: request.0, kind: request.1, problem: problem,
+                                                             variables: request.2, mode: request.3)
+                if request.3 == .study {
+                    aiNote = (answer, false)
+                } else {
+                    text = answer
+                }
+            } catch {
+                aiNote = (error.localizedDescription, true)
+            }
+        }
     }
 
     func insert(_ name: String) {

@@ -73,11 +73,31 @@
         }
       }
     },
+    "%lld shapes changed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld blocchi modificati"
+          }
+        }
+      }
+    },
     "%lld%%": {
       "shouldTranslate": false
     },
     "1": {
       "shouldTranslate": false
+    },
+    "1 shape changed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 blocco modificato"
+          }
+        }
+      }
     },
     "10": {
       "shouldTranslate": false
@@ -137,6 +157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Una nota per chi legge il diagramma. Non influisce sul programma."
+          }
+        }
+      }
+    },
+    "A required field is empty.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un campo obbligatorio è vuoto."
           }
         }
       }
@@ -251,22 +281,22 @@
         }
       }
     },
-    "Added a shape": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aggiunto un blocco"
-          }
-        }
-      }
-    },
     "Added the function %@": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Aggiunta la funzione %@"
+          }
+        }
+      }
+    },
+    "Added “%@”": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunto “%@”"
           }
         }
       }
@@ -381,6 +411,46 @@
         }
       }
     },
+    "Ask AI": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi all'AI"
+          }
+        }
+      }
+    },
+    "Ask for an explanation or a hint…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi una spiegazione o un suggerimento…"
+          }
+        }
+      }
+    },
+    "Ask the AI Assistant": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi all'assistente AI"
+          }
+        }
+      }
+    },
+    "Ask the assistant for a hint about this mistake": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi all'assistente un suggerimento su questo errore"
+          }
+        }
+      }
+    },
     "Ask what your flowchart does or why it fails, or say what to change: the assistant adds, edits and moves shapes for you, live.": {
       "localizations": {
         "it": {
@@ -427,6 +497,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Autori"
+          }
+        }
+      }
+    },
+    "Auto Mode": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modalità auto"
           }
         }
       }
@@ -564,12 +644,22 @@
         }
       }
     },
-    "Changed a shape": {
+    "Changed “%@”": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Modificato un blocco"
+            "value": "Modificato “%@”"
+          }
+        }
+      }
+    },
+    "Changes the chart for you": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica il diagramma al posto tuo"
           }
         }
       }
@@ -580,6 +670,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cambia il colore delle linee disegnate dalla tartaruga."
+          }
+        }
+      }
+    },
+    "Changes undone": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifiche annullate"
           }
         }
       }
@@ -790,6 +890,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Crea"
+          }
+        }
+      }
+    },
+    "Create a program that asks for a password until it's right.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea un programma che chiede una password finché non è giusta."
+          }
+        }
+      }
+    },
+    "Create a program that asks for two numbers and shows the larger one.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea un programma che chiede due numeri e mostra il più grande."
+          }
+        }
+      }
+    },
+    "Create a program that counts from 1 to 10.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea un programma che conta da 1 a 10."
           }
         }
       }
@@ -1137,6 +1267,46 @@
         }
       }
     },
+    "Explain the function %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiegami la funzione %@."
+          }
+        }
+      }
+    },
+    "Explain this shape: “%@”": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiegami questo blocco: “%@”"
+          }
+        }
+      }
+    },
+    "Explain with AI": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiega con l'AI"
+          }
+        }
+      }
+    },
+    "Explains and gives hints, never changes the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiega e dà suggerimenti, senza mai modificare il diagramma"
+          }
+        }
+      }
+    },
     "Export": {
       "localizations": {
         "it": {
@@ -1227,6 +1397,16 @@
         }
       }
     },
+    "Find the Mistake": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trova l'errore"
+          }
+        }
+      }
+    },
     "Finish signing in in your browser.": {
       "localizations": {
         "it": {
@@ -1277,6 +1457,16 @@
         }
       }
     },
+    "Fixing a mistake in the changes…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Correggo un errore nelle modifiche…"
+          }
+        }
+      }
+    },
     "Flowchart": {
       "localizations": {
         "it": {
@@ -1293,6 +1483,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Per"
+          }
+        }
+      }
+    },
+    "For example: the average should be 8.25": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per esempio: la media dovrebbe essere 8,25"
           }
         }
       }
@@ -1377,6 +1577,26 @@
         }
       }
     },
+    "Get a Hint": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dammi un suggerimento"
+          }
+        }
+      }
+    },
+    "Give me a simple exercise to practice with.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dammi un esercizio semplice per allenarmi."
+          }
+        }
+      }
+    },
     "Go back to FlowGorithmForMac to try again.": {
       "localizations": {
         "it": {
@@ -1410,12 +1630,55 @@
     "Greet(name)": {
       "shouldTranslate": false
     },
+    "Help me understand the function %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aiutami a capire la funzione %@."
+          }
+        }
+      }
+    },
+    "Help me with the error: “%@”": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aiutami con l'errore: “%@”"
+          }
+        }
+      }
+    },
+    "Hide": {
+      "shouldTranslate": false
+    },
+    "Hint": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggerimento"
+          }
+        }
+      }
+    },
     "Home": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Punto iniziale"
+          }
+        }
+      }
+    },
+    "How do I start a program that asks for two numbers and adds them?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come inizio un programma che chiede due numeri e li somma?"
           }
         }
       }
@@ -1540,6 +1803,16 @@
         }
       }
     },
+    "Is there a mistake in this flowchart? Give me a hint, not the answer.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'è un errore in questo diagramma? Dammi un indizio, non la soluzione."
+          }
+        }
+      }
+    },
     "It uses free AI models through OpenRouter. Sign in with your Google account or email: it's free, with about 50 requests a day.": {
       "localizations": {
         "it": {
@@ -1609,6 +1882,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Meno"
+          }
+        }
+      }
+    },
+    "Let the assistant correct this field": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fai correggere questo campo all'assistente"
           }
         }
       }
@@ -1703,12 +1986,12 @@
         }
       }
     },
-    "Moved a shape": {
+    "Moved “%@”": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Spostato un blocco"
+            "value": "Spostato “%@”"
           }
         }
       }
@@ -1852,6 +2135,12 @@
           }
         }
       }
+    },
+    "Off": {
+      "shouldTranslate": false
+    },
+    "On": {
+      "shouldTranslate": false
     },
     "Only when a condition is true": {
       "localizations": {
@@ -2223,6 +2512,16 @@
         }
       }
     },
+    "Put the assistant's changes back": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rimetti le modifiche dell'assistente"
+          }
+        }
+      }
+    },
     "Read": {
       "localizations": {
         "it": {
@@ -2239,6 +2538,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Leggi da file %@"
+          }
+        }
+      }
+    },
+    "Reading the flowchart…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggo il diagramma…"
           }
         }
       }
@@ -2289,6 +2598,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rosso"
+          }
+        }
+      }
+    },
+    "Redo": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ripeti"
           }
         }
       }
@@ -2623,6 +2942,16 @@
         }
       }
     },
+    "Show on the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra nel diagramma"
+          }
+        }
+      }
+    },
     "Show or Hide Panels": {
       "localizations": {
         "it": {
@@ -2753,6 +3082,26 @@
         }
       }
     },
+    "Still running": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ancora in esecuzione"
+          }
+        }
+      }
+    },
+    "Still working: free models can be slow…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ci sto ancora lavorando: i modelli gratuiti possono essere lenti…"
+          }
+        }
+      }
+    },
     "Stop": {
       "localizations": {
         "it": {
@@ -2769,6 +3118,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stop (⌘., F8)"
+          }
+        }
+      }
+    },
+    "Stop the program and ask the assistant why it doesn't end": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferma il programma e chiedi all'assistente perché non finisce"
           }
         }
       }
@@ -2813,6 +3172,16 @@
         }
       }
     },
+    "Study Mode": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modalità studio"
+          }
+        }
+      }
+    },
     "Style": {
       "localizations": {
         "it": {
@@ -2823,12 +3192,42 @@
         }
       }
     },
+    "Switch to Auto Mode: the assistant changes the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passa alla modalità auto: l'assistente modifica il diagramma"
+          }
+        }
+      }
+    },
+    "Switch to Study Mode: hints only": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passa alla modalità studio: solo suggerimenti"
+          }
+        }
+      }
+    },
     "System": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Sistema"
+          }
+        }
+      }
+    },
+    "Take back everything this reply changed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla tutto quello che ha cambiato questa risposta"
           }
         }
       }
@@ -2863,12 +3262,32 @@
         }
       }
     },
+    "The assistant's version has a mistake too. Try changing it yourself.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anche la versione dell'assistente ha un errore. Prova a correggerlo tu."
+          }
+        }
+      }
+    },
     "The browser came back without completing the sign-in. Try again.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Il browser è tornato senza completare l'accesso. Riprova."
+          }
+        }
+      }
+    },
+    "The chart changed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il diagramma è cambiato"
           }
         }
       }
@@ -3003,6 +3422,26 @@
         }
       }
     },
+    "The program doesn't stop: is there an endless loop?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il programma non si ferma: c'è un ciclo infinito?"
+          }
+        }
+      }
+    },
+    "The program has been running for a while without asking anything. It may be stuck in an endless loop.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il programma gira da un po' senza chiedere niente. Potrebbe essere bloccato in un ciclo infinito."
+          }
+        }
+      }
+    },
     "The program has no Main function.": {
       "localizations": {
         "it": {
@@ -3039,6 +3478,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Il programma usa troppa memoria: i suoi vettori o testi sono troppo grandi."
+          }
+        }
+      }
+    },
+    "The result isn't right. I expected: “%@”": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il risultato non è giusto. Mi aspettavo: “%@”"
+          }
+        }
+      }
+    },
+    "The result isn't what you expected?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il risultato non è quello che ti aspettavi?"
           }
         }
       }
@@ -3099,6 +3558,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ci sono due funzioni chiamate “%@”."
+          }
+        }
+      }
+    },
+    "Thinking of a hint…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penso a un suggerimento…"
           }
         }
       }
@@ -3253,6 +3722,16 @@
         }
       }
     },
+    "Undo": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
+          }
+        }
+      }
+    },
     "Unexpected character “%@” in “%@”.": {
       "localizations": {
         "it": {
@@ -3373,12 +3852,72 @@
         }
       }
     },
+    "What did you expect the program to show?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa ti aspettavi che mostrasse il programma?"
+          }
+        }
+      }
+    },
+    "What does this program do, step by step?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa fa questo programma, passo per passo?"
+          }
+        }
+      }
+    },
     "What does this program do?": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Cosa fa questo programma?"
+          }
+        }
+      }
+    },
+    "What should I try next?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa dovrei provare adesso?"
+          }
+        }
+      }
+    },
+    "What's Wrong Here?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa c'è che non va?"
+          }
+        }
+      }
+    },
+    "What's the difference between a While and a For loop?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Che differenza c'è tra un ciclo While e un ciclo For?"
+          }
+        }
+      }
+    },
+    "What's wrong with this shape? “%@”": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa c'è che non va in questo blocco? “%@”"
           }
         }
       }
@@ -3453,12 +3992,12 @@
         }
       }
     },
-    "You've used today's free requests. They come back at %@.": {
+    "You've used today's free requests. They come back at %@, %@.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hai usato le richieste gratuite di oggi. Tornano alle %@."
+            "value": "Hai usato le richieste gratuite di oggi. Tornano alle %@, %@."
           }
         }
       }

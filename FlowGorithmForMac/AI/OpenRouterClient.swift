@@ -65,30 +65,32 @@ enum OpenRouterClient {
         // Optional attribution headers that OpenRouter shows in the user's activity.
         request.setValue("https://github.com/SkryxDev/FlowGorithmForMac", forHTTPHeaderField: "HTTP-Referer")
         request.setValue("FlowGorithmForMac", forHTTPHeaderField: "X-Title")
-        request.httpBody = JSON.object([
+        var body: [String: JSON] = [
             "models": .array(models.map(JSON.string)),
             "messages": .array(messages),
-            "tools": .array(tools),
             // Free models that think at length can spend the whole reply on reasoning and answer
             // nothing; a light effort is plenty for flowcharts and answers much sooner.
             "reasoning": ["effort": "low"],
             "max_tokens": 8192,
-        ]).data
+        ]
+        // Some providers refuse an empty list of tools, so a request without tools leaves it out.
+        if !tools.isEmpty { body["tools"] = .array(tools) }
+        request.httpBody = JSON.object(body).data
 
         let (data, response) = try await URLSession.shared.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        let body = JSON.parse(data)
-        let message = body?["error"]?["message"]?.string ?? String(decoding: data.prefix(300), as: UTF8.self)
+        let reply = JSON.parse(data)
+        let message = reply?["error"]?["message"]?.string ?? String(decoding: data.prefix(300), as: UTF8.self)
         switch status {
         case 200:
             // Errors can also arrive inside a 200, from the provider behind the model.
-            if body?["error"] != nil { throw OpenRouterError.refused(status: 200, message: message) }
-            let choice = body?["choices"]?.array?.first
+            if reply?["error"] != nil { throw OpenRouterError.refused(status: 200, message: message) }
+            let choice = reply?["choices"]?.array?.first
             if let error = choice?["error"] {
                 throw OpenRouterError.refused(status: 200, message: error["message"]?.string ?? message)
             }
-            guard let reply = choice?["message"] else { throw OpenRouterError.emptyReply }
-            return Reply(message: reply, model: body?["model"]?.string ?? models.first ?? "")
+            guard let answer = choice?["message"] else { throw OpenRouterError.emptyReply }
+            return Reply(message: answer, model: reply?["model"]?.string ?? models.first ?? "")
         case 401:
             throw OpenRouterError.keyRevoked
         case 429:

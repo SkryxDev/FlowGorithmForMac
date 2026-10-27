@@ -45,6 +45,9 @@ final class EditorModel {
     var bottomPanel: PanelTab = .variables
     var showsBottomPanel = true
     var lastError: String?
+    /// Shapes the assistant just changed, highlighted for a moment.
+    private(set) var flashing: Set<Statement.ID> = []
+    @ObservationIgnored private var flashTask: Task<Void, Never>?
 
     // The layout of the shown function, rebuilt only when the function or the metrics change.
     @ObservationIgnored private var cachedLayout: (function: Function, fontSize: CGFloat, compact: Bool, layout: ChartLayout)?
@@ -71,6 +74,18 @@ final class EditorModel {
     func currentFunction(in program: Program) -> Function? {
         if let functionID, let function = program.functions.first(where: { $0.id == functionID }) { return function }
         return program.main
+    }
+
+    /// Highlights shapes for a couple of seconds, so the user sees what the assistant changed.
+    func flash(_ ids: [Statement.ID]) {
+        flashTask?.cancel()
+        guard !ids.isEmpty else { return }
+        flashing = Set(ids)
+        flashTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.6)) { self?.flashing = [] }
+        }
     }
 
     func show(_ panel: PanelTab) {

@@ -14,8 +14,16 @@ struct AIPanel: View {
 
     @State private var draft = ""
     @FocusState private var composing: Bool
+    @AppStorage(SettingsKey.aiMode) private var aiMode = AIMode.auto.rawValue
+    /// The "result isn't right" card: open while the user writes what they expected.
+    @State private var describingResult = false
+    @State private var expected = ""
+    /// Hidden after the user answers or closes it, until the next run.
+    @State private var resultCardDone = false
+    @FocusState private var writingExpected: Bool
 
     private var account: OpenRouterAccount { .shared }
+    var mode: AIMode { AIMode(rawValue: aiMode) ?? .auto }
 
     var body: some View {
         Group {
@@ -96,28 +104,35 @@ struct AIPanel: View {
         VStack(spacing: 0) {
             header
             Divider()
+            AIModeSwitch()
+            Divider()
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     if chat.entries.isEmpty { suggestions }
                     ForEach(chat.entries) { entry in
                         row(entry)
                     }
-                    if chat.isWorking {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text("Thinking…").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
+                    if chat.isWorking { status }
                     // Inside the scroll view, so its wrapping text never changes the column's size.
                     fixCard
+                    resultCard
                 }
                 .padding(12)
                 .animation(.snappy, value: errorToFix)
+                .animation(.snappy, value: showsResultCard)
             }
             .defaultScrollAnchor(.bottom)
             composer
         }
         .task { await account.refreshUsage() }
+        .onChange(of: chat.focusRequest) { composing = true }
+        .onChange(of: session.state) { _, state in
+            if state.isActive {
+                resultCardDone = false
+                describingResult = false
+                expected = ""
+            }
+        }
     }
 
     var header: some View {
@@ -149,14 +164,14 @@ struct AIPanel: View {
         .padding(.vertical, 8)
     }
 
+    // MARK: Suggestions
+
     var suggestions: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Try asking")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            ForEach([String(localized: "What does this program do?"),
-                     String(localized: "Is there a mistake in this flowchart?"),
-                     String(localized: "Add an output that says “Well done!” at the end.")], id: \.self) { suggestion in
+            ForEach(suggestionList, id: \.self) { suggestion in
                 Button { send(suggestion) } label: {
                     Text(suggestion)
                         .multilineTextAlignment(.leading)
@@ -169,6 +184,36 @@ struct AIPanel: View {
         }
         .padding(.bottom, 4)
     }
+
+    /// Suggestions that fit the chart and the mode: ideas to start from when it's empty, questions
+    /// about its functions when it has some.
+    var suggestionList: [String] {
+        let program = context().program.wrappedValue
+        let empty = program.functions.allSatisfy { $0.body.isEmpty }
+        let function = program.functions.first { !$0.isMain }?.name
+        switch (mode, empty) {
+        case (.study, true):
+            return [String(localized: "How do I start a program that asks for two numbers and adds them?"),
+                    String(localized: "What's the difference between a While and a For loop?"),
+                    String(localized: "Give me a simple exercise to practice with.")]
+        case (.study, false):
+            return [String(localized: "Is there a mistake in this flowchart? Give me a hint, not the answer."),
+                    function.map { String(localized: "Help me understand the function \($0).") }
+                        ?? String(localized: "What does this program do, step by step?"),
+                    String(localized: "What should I try next?")]
+        case (.auto, true):
+            return [String(localized: "Create a program that asks for two numbers and shows the larger one."),
+                    String(localized: "Create a program that counts from 1 to 10."),
+                    String(localized: "Create a program that asks for a password until it's right.")]
+        case (.auto, false):
+            return [String(localized: "What does this program do?"),
+                    function.map { String(localized: "Explain the function \($0).") }
+                        ?? String(localized: "Is there a mistake in this flowchart?"),
+                    String(localized: "Add an output that says “Well done!” at the end.")]
+        }
+    }
+
+    // MARK: Rows
 
     @ViewBuilder
     func row(_ entry: AIChat.Entry) -> some View {
@@ -185,9 +230,7 @@ struct AIPanel: View {
             }
         case .assistant:
             VStack(alignment: .leading, spacing: 3) {
-                Text(Self.markdown(entry.text))
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+                MarkdownText(text: entry.text)
                 if let model = entry.model {
                     Text(model)
                         .font(.caption2)
@@ -195,9 +238,19 @@ struct AIPanel: View {
                 }
             }
         case .action:
-            Label(entry.text, systemImage: "wand.and.stars")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Button {
+                chat.reveal(entry.targets, context: context)
+            } label: {
+                Label(entry.text, systemImage: "wand.and.stars")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(entry.targets.isEmpty)
+            .help(entry.targets.isEmpty ? "" : String(localized: "Show on the chart"))
+        case .changes:
+            changesRow(entry)
         case .error:
             Label(entry.text, systemImage: "exclamationmark.triangle.fill")
                 .font(.callout)
@@ -207,6 +260,63 @@ struct AIPanel: View {
                 .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
+
+    /// What a reply changed, with a button that takes it all back or puts it back.
+    func changesRow(_ entry: AIChat.Entry) -> some View {
+        let live = context()
+        let canToggle = !live.locked && chat.canToggle(entry, in: live.program.wrappedValue)
+        return HStack(spacing: 8) {
+            Image(systemName: entry.undone ? "arrow.uturn.backward.circle" : "checkmark.circle.fill")
+                .foregroundStyle(entry.undone ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.purple))
+            Text(entry.undone ? String(localized: "Changes undone")
+                 : entry.count == 0 ? String(localized: "The chart changed")
+                 : entry.count == 1 ? String(localized: "1 shape changed") : String(localized: "\(entry.count) shapes changed"))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 4)
+            if canToggle {
+                Button(entry.undone ? "Redo" : "Undo", systemImage: entry.undone ? "arrow.uturn.forward" : "arrow.uturn.backward") {
+                    withAnimation(.snappy) { chat.toggle(entry, context: context) }
+                }
+                .font(.caption)
+                .buttonStyle(.glass)
+                .controlSize(.small)
+                .help(entry.undone ? "Put the assistant's changes back" : "Take back everything this reply changed")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color.purple.opacity(entry.undone ? 0.04 : 0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// What the assistant is doing, with the time it's taking: free models can need half a minute.
+    var status: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            let elapsed = chat.workStarted.map { timeline.date.timeIntervalSince($0) } ?? 0
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(statusText(elapsed: elapsed))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.opacity)
+                if elapsed >= 5 {
+                    Text(verbatim: "\(Int(elapsed)) s")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .animation(.snappy, value: statusText(elapsed: elapsed))
+        }
+    }
+
+    func statusText(elapsed: TimeInterval) -> String {
+        if chat.phase == .fixing { return String(localized: "Fixing a mistake in the changes…") }
+        if elapsed < 3 { return String(localized: "Reading the flowchart…") }
+        if elapsed < 20 { return mode == .study ? String(localized: "Thinking of a hint…") : String(localized: "Thinking…") }
+        return String(localized: "Still working: free models can be slow…")
+    }
+
+    // MARK: Cards
 
     /// The error the last run stopped with, until the user asks the assistant to fix it.
     var errorToFix: RuntimeError? {
@@ -225,11 +335,12 @@ struct AIPanel: View {
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
                 Button {
-                    chat.fix(error, context: context)
+                    chat.ask(.fixError(error), context: context)
                 } label: {
-                    Label("Fix with AI", systemImage: "sparkles")
+                    Label(mode == .study ? "Get a Hint" : "Fix with AI", systemImage: mode == .study ? "graduationcap.fill" : "sparkles")
                 }
                 .buttonStyle(.glassProminent)
+                .tint(mode.color)
                 .controlSize(.small)
             }
             .padding(10)
@@ -239,10 +350,98 @@ struct AIPanel: View {
         }
     }
 
+    var showsResultCard: Bool {
+        session.state == .finished && !resultCardDone && !chat.isWorking
+    }
+
+    /// After a run that ended without errors: a way to say the output isn't what it should be.
+    @ViewBuilder
+    var resultCard: some View {
+        if showsResultCard {
+            VStack(alignment: .leading, spacing: 8) {
+                if describingResult {
+                    Text("What did you expect the program to show?")
+                        .font(.callout.weight(.medium))
+                    TextField("For example: the average should be 8.25", text: $expected, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...4)
+                        .focused($writingExpected)
+                        .onSubmit(sendResult)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    HStack {
+                        Button("Cancel") {
+                            withAnimation(.snappy) { describingResult = false }
+                        }
+                        .buttonStyle(.borderless)
+                        Spacer()
+                        Button(mode == .study ? "Get a Hint" : "Find the Mistake", systemImage: mode == .study ? "graduationcap.fill" : "sparkles",
+                               action: sendResult)
+                            .buttonStyle(.glassProminent)
+                            .tint(mode.color)
+                            .controlSize(.small)
+                            .disabled(expected.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                } else {
+                    HStack(spacing: 6) {
+                        Button {
+                            withAnimation(.snappy) { describingResult = true }
+                            writingExpected = true
+                        } label: {
+                            Label("The result isn't what you expected?", systemImage: "questionmark.bubble")
+                                .font(.callout)
+                        }
+                        .buttonStyle(.borderless)
+                        Spacer(minLength: 4)
+                        Button {
+                            withAnimation(.snappy) { resultCardDone = true }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Hide")
+                    }
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
+    }
+
+    func sendResult() {
+        let text = expected.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !chat.isWorking else { return }
+        chat.ask(.wrongResult(expected: text, output: consoleTranscript), context: context)
+        withAnimation(.snappy) {
+            resultCardDone = true
+            describingResult = false
+        }
+        expected = ""
+    }
+
+    /// The end of what the run printed, with the user's inputs marked, short enough for a request.
+    var consoleTranscript: String {
+        let lines = session.console.suffix(60).map { entry -> String in
+            switch entry.kind {
+            case .input: "> \(entry.text) (typed by the user)"
+            default: entry.text
+            }
+        }
+        let text = lines.joined(separator: "\n")
+        return text.count > 4000 ? "…" + String(text.suffix(4000)) : text
+    }
+
+    // MARK: Composer
+
     var composer: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .bottom, spacing: 8) {
-                TextField("Ask, or describe a change…", text: $draft, axis: .vertical)
+                TextField(mode == .study ? "Ask for an explanation or a hint…" : "Ask, or describe a change…", text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...6)
                     .focused($composing)
@@ -266,6 +465,7 @@ struct AIPanel: View {
                             .frame(width: 22, height: 22)
                     }
                     .buttonStyle(.glassProminent)
+                    .tint(mode.color)
                     .buttonBorderShape(.circle)
                     .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .help("Send")
@@ -283,8 +483,4 @@ struct AIPanel: View {
         composing = true
     }
 
-    static func markdown(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            ?? AttributedString(text)
-    }
 }

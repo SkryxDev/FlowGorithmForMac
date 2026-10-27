@@ -17,6 +17,8 @@ struct ToolOutcome {
     var output: String
     /// What the chat shows, when the chart changed.
     var summary: String?
+    /// The shapes added, changed or moved, to point them out on the chart.
+    var changed: [Statement.ID] = []
 }
 
 /// The flowchart as the model sees it, and the functions it calls to change it.
@@ -72,22 +74,15 @@ final class FlowchartTools {
         return Locale(identifier: "en").localizedString(forLanguageCode: code) ?? "English"
     }
 
-    static func instructions(listing: String) -> String {
+    static func instructions(listing: String, mode: AIMode = .auto) -> String {
         """
         You are the assistant inside FlowGorithmForMac, a Mac app where students write and run programs as \
         flowcharts, compatible with Flowgorithm. The flowchart open in the app is shown below and is always up \
-        to date.
+        to date. Always reply in \(replyLanguage), even when the user writes in another language, briefly and \
+        in plain words. Write expressions, variable names and shape contents in `backticks`. Use short \
+        paragraphs, and a list only for steps.
 
-        Answer questions about it (what it does, why it fails, how to improve it) and change it when the user \
-        asks, using the flowchart tools: never paste XML in your reply for the user to copy. Make the smallest \
-        change that does what was asked and keep the user's shapes. Always reply in \(replyLanguage), even when \
-        the user writes in another language, briefly and \
-        in plain words.
-
-        Each reply costs the user one of a few daily requests, so do the whole job in this one reply: call \
-        every tool you need at once, and in the same reply tell the user in one or two sentences what you \
-        changed. You only hear back if a change fails. An if or a loop can be inserted together with the \
-        shapes inside it.
+        \(mode == .study ? studyRules : autoRules)
 
         Shapes are .fprg XML elements, one per shape:
         <declare name="x, y" type="Integer" array="False" size=""/>  types: Integer, Real, String, Boolean; arrays: array="True" size="10"
@@ -125,7 +120,34 @@ final class FlowchartTools {
         """
     }
 
+    static let autoRules = """
+        Auto mode is on. Answer questions about the flowchart (what it does, why it fails, how to improve it) \
+        and change it when the user asks, using the flowchart tools: never paste XML in your reply for the \
+        user to copy. Make the smallest change that does what was asked and keep the user's shapes.
+
+        Each reply costs the user one of a few daily requests, so do the whole job in this one reply: call \
+        every tool you need at once, and in the same reply tell the user in one or two sentences what you \
+        changed and why: always write those sentences, also when you only call tools. You only hear back if \
+        a change fails. An if or a loop can be inserted together with the shapes inside it.
+        """
+
+    static let studyRules = """
+        Study mode is on: the user is a student learning to program, and the goal is that they find the \
+        solution themselves. You can't change the flowchart and you never write the finished solution, \
+        neither as shapes nor as code, not even the corrected expression. Instead: explain the idea behind \
+        the problem, with a tiny example unrelated to their exercise when it helps; say which shape to look \
+        at and why (select_shape shows it on the chart); end with one guiding question or one hint. Give one \
+        hint at a time, a more precise one only when they're still stuck. Praise what is already right. If \
+        they ask you to just do it, say that Study Mode is on and that the switch at the top of the \
+        assistant turns on Auto Mode.
+        """
+
     // MARK: Definitions
+
+    /// The tools for a mode: in study mode the assistant can only point at shapes.
+    static func definitions(for mode: AIMode) -> [JSON] {
+        mode == .study ? definitions.filter { $0["function"]?["name"]?.string == "select_shape" } : definitions
+    }
 
     static var definitions: [JSON] {
         let position: JSON = ["type": "string", "enum": ["after", "before", "start_of_function", "end_of_function",
@@ -178,11 +200,14 @@ final class FlowchartTools {
 
     // MARK: Running
 
-    func run(name: String, arguments: String, context: ToolContext) -> ToolOutcome {
+    func run(name: String, arguments: String, context: ToolContext, mode: AIMode = .auto) -> ToolOutcome {
         var args = JSON.parse(Data(arguments.utf8)) ?? [:]
         // Some models encode the arguments twice, as a string holding the JSON object.
         if let inner = args.string, let decoded = JSON.parse(Data(inner.utf8)) { args = decoded }
         do {
+            if mode == .study && name != "select_shape" {
+                throw ToolError("Study mode is on, so you can't change the flowchart. Give the user a hint instead.")
+            }
             if context.locked && !["select_shape", "check_program"].contains(name) {
                 throw ToolError("The program is running, so the chart can't change. Ask the user to stop it first.")
             }
@@ -216,7 +241,8 @@ final class FlowchartTools {
         let names = shapes.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.map { shortID($0.id) }
         let count = shapes.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.count
         return ToolOutcome(output: "Inserted \(names.joined(separator: ", ")) in \(program.functions[index].name)." + problems(in: shapes),
-                           summary: count == 1 ? String(localized: "Added a shape") : String(localized: "Added \(count) shapes"))
+                           summary: count == 1 ? String(localized: "Added “\(ShapeText.label(shapes[0]))”") : String(localized: "Added \(count) shapes"),
+                           changed: shapes.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.map(\.id))
     }
 
     private func update(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {
@@ -234,7 +260,7 @@ final class FlowchartTools {
         program.functions[functionIndex].body.replaceStatement(updated)
         context.program.wrappedValue = program
         show(id, in: program.functions[functionIndex], context)
-        return ToolOutcome(output: "Updated \(shortID(id))." + problems(in: [updated]), summary: String(localized: "Changed a shape"))
+        return ToolOutcome(output: "Updated \(shortID(id))." + problems(in: [updated]), summary: String(localized: "Changed “\(ShapeText.label(updated))”"), changed: [id])
     }
 
     private func delete(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {
@@ -271,7 +297,8 @@ final class FlowchartTools {
         }
         context.program.wrappedValue = program
         show(id, in: program.functions[functionIndex], context)
-        return ToolOutcome(output: "Moved \(shortID(id)).", summary: String(localized: "Moved a shape"))
+        let label = program.functions[functionIndex].body.statement(withID: id).map(ShapeText.label) ?? ""
+        return ToolOutcome(output: "Moved \(shortID(id)).", summary: String(localized: "Moved “\(label)”"), changed: [id])
     }
 
     private func addFunction(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {

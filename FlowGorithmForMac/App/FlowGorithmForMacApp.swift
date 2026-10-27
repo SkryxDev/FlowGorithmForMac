@@ -157,6 +157,10 @@ struct AppCommands: Commands {
             Button("Program Info…") { actions?.programInfo() }
                 .keyboardShortcut("i", modifiers: [.command, .shift])
                 .disabled(actions == nil)
+            Divider()
+            Button("Ask the AI Assistant") { actions?.askAI() }
+                .keyboardShortcut("l")
+                .disabled(actions == nil)
         }
     }
 

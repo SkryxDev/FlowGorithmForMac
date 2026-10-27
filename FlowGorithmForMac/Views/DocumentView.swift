@@ -35,6 +35,7 @@ struct DocumentActions {
     var ignoreBreakpoints: Bool
     var toggleIgnoreBreakpoints: () -> Void
     var removeBreakpoints: () -> Void
+    var askAI: () -> Void
 }
 
 struct DocumentActionsKey: FocusedValueKey {
@@ -67,6 +68,9 @@ struct DocumentView: View {
     @AppStorage(SettingsKey.showsBottomPanel) private var savedShowsBottomPanel = true
     @AppStorage(SettingsKey.zoom) private var savedZoom = 1.0
     @AppStorage(SettingsKey.ignoreBreakpoints) private var savedIgnoreBreakpoints = false
+    @AppStorage(SettingsKey.aiMode) private var aiMode = AIMode.auto.rawValue
+    /// Set when a program has been running at full speed for a while without asking for input.
+    @State private var runsLong = false
 
     var theme: Theme { Theme.named(themeID) }
 
@@ -84,7 +88,10 @@ struct DocumentView: View {
         } detail: {
             FlowchartView(program: $document.program, editor: editor, session: session)
                 .overlay(alignment: .bottomTrailing) { zoomControls }
-                .overlay(alignment: .bottom) { errorBanner }
+                .overlay(alignment: .bottom) {
+                    errorBanner
+                    longRunBanner
+                }
                 .navigationTitle(editor.currentFunction(in: document.program).map(\.isMain) == false
                                  ? editor.currentFunction(in: document.program)!.name : "")
         }
@@ -92,6 +99,7 @@ struct DocumentView: View {
             InspectorPanel(program: document.program, editor: editor, session: session)
                 .inspectorColumnWidth(min: 280, ideal: 360, max: 640)
         }
+        .environment(\.aiActions, AIActions(isAvailable: OpenRouterAccount.shared.status == .signedIn, ask: askAI))
         .toolbar { toolbar }
         .background { functionKeys }
         .focusedSceneValue(\.documentActions, actions)
@@ -145,6 +153,15 @@ struct DocumentView: View {
         .onChange(of: editor.bottomPanel) { _, tab in savedBottomPanel = tab.rawValue }
         .onChange(of: editor.showsBottomPanel) { _, shows in savedShowsBottomPanel = shows }
         .onChange(of: editor.zoom) { _, zoom in savedZoom = zoom }
+        .task(id: session.state) {
+            // A program that keeps running at full speed without asking anything is probably stuck.
+            runsLong = false
+            guard session.state == .running else { return }
+            try? await Task.sleep(for: .seconds(8))
+            if !Task.isCancelled, session.state == .running, session.speed >= 0.98 {
+                withAnimation(.snappy) { runsLong = true }
+            }
+        }
         .onChange(of: session.state) { _, state in
             switch state {
             case .waitingForInput: editor.show(.console)
@@ -203,10 +220,19 @@ struct DocumentView: View {
         ToolContext(program: $document.program, editor: editor, locked: session.state.isActive)
     }
 
-    /// Shows the assistant and asks it to fix the error.
-    func fixWithAI(_ error: RuntimeError) {
+    var mode: AIMode { AIMode(rawValue: aiMode) ?? .auto }
+
+    /// Shows the assistant and sends it a request from the chart, the banners or the menus.
+    func askAI(_ request: AIRequest) {
         showsSidebar = true
-        chat.fix(error, context: toolContext)
+        chat.ask(request, context: toolContext)
+    }
+
+    /// Stops a program that seems stuck and asks the assistant why.
+    func askAboutLongRun() {
+        let place = (session.currentStatement, session.currentFunctionName)
+        session.stop()
+        askAI(.endlessLoop(place.0, function: place.1))
     }
 
     /// Jumps to the function and shape where a problem is.
@@ -248,7 +274,11 @@ struct DocumentView: View {
             speed: session.speed,
             ignoreBreakpoints: session.ignoreBreakpoints,
             toggleIgnoreBreakpoints: { session.ignoreBreakpoints.toggle() },
-            removeBreakpoints: removeBreakpoints
+            removeBreakpoints: removeBreakpoints,
+            askAI: {
+                showsSidebar = true
+                chat.requestFocus()
+            }
         )
     }
 
@@ -374,14 +404,51 @@ struct DocumentView: View {
                         .buttonStyle(.glass)
                 }
                 if OpenRouterAccount.shared.status == .signedIn && error != chat.lastFixedError {
-                    Button("Fix with AI", systemImage: "sparkles") { fixWithAI(error) }
+                    Button(mode == .study ? "Get a Hint" : "Fix with AI",
+                           systemImage: mode == .study ? "graduationcap.fill" : "sparkles") { askAI(.fixError(error)) }
                         .buttonStyle(.glassProminent)
+                        .tint(mode.color)
                         .disabled(chat.isWorking)
                 }
             }
             .padding(14)
             .frame(maxWidth: 560)
             .glassEffect(.regular.tint(.red.opacity(0.15)), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.bottom, 64)
+            .padding(.horizontal, 20)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder
+    var longRunBanner: some View {
+        if runsLong, session.state == .running {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.trianglehead.2.clockwise")
+                    .font(.title2)
+                    .foregroundStyle(.orange)
+                    .symbolEffect(.rotate, options: .repeating)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Still running")
+                        .font(.headline)
+                    Text("The program has been running for a while without asking anything. It may be stuck in an endless loop.")
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Button("Stop") { session.stop() }
+                    .buttonStyle(.glass)
+                if OpenRouterAccount.shared.status == .signedIn {
+                    Button("Ask AI", systemImage: mode == .study ? "graduationcap.fill" : "sparkles", action: askAboutLongRun)
+                        .buttonStyle(.glassProminent)
+                        .tint(mode.color)
+                        .disabled(chat.isWorking)
+                        .help("Stop the program and ask the assistant why it doesn't end")
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: 560)
+            .glassEffect(.regular.tint(.orange.opacity(0.15)), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .padding(.bottom, 64)
             .padding(.horizontal, 20)
             .transition(.move(edge: .bottom).combined(with: .opacity))
