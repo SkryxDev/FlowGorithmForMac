@@ -5,6 +5,10 @@
 <h1 align="center">FlowGorithmForMac</h1>
 
 <p align="center">
+  <a href="https://ko-fi.com/K0O529L823"><img alt="ko-fi" src="https://ko-fi.com/img/githubbutton_sm.svg"></a>
+</p>
+
+<p align="center">
   Write and run programs as flowcharts on the Mac — native, fast, and compatible with Flowgorithm's <code>.fprg</code> files.
 </p>
 
@@ -101,7 +105,7 @@ app's language, Italian or English.
   [OpenRouter](https://openrouter.ai) with Google or an email and authorize the app. There's no API key to
   copy: OpenRouter gives the app a key of your own, kept in a private file on your Mac.
 - **Free models** — requests go to Google's Gemma 4 31B, and to other free models when it's busy.
-  The list is checked against OpenRouter's catalog at launch, since the free models change often.
+  The list is checked against OpenRouter's catalog with the first message after launch, since the free models change often.
 - **Daily limit** — OpenRouter allows 50 free-model requests a day per account (1,000 after a one-time
   10 $ top-up), reset at midnight UTC. The ring in the assistant's header fills up as you use them; click it
   for the percentage and the reset time. The limit belongs to your OpenRouter account, not to the app.
