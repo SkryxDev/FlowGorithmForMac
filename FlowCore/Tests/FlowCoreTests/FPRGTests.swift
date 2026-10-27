@@ -182,6 +182,20 @@ struct FPRGTests {
         #expect(FPRGWriter.fragment(pasted) == fragment)
     }
 
+    @Test func taggedFragmentsNameEveryShape() throws {
+        let program = try FPRGReader.read(Data(Self.modern.utf8))
+        let body = program.functions[0].body
+        let numbers = Dictionary(uniqueKeysWithValues: body.flattened.enumerated().map { ($1.id, "s\($0 + 1)") })
+        let tagged = FPRGWriter.fragment(body) { numbers[$0.id] ?? "?" }
+        // Unknown elements are kept verbatim, so only the shapes the app understands get an id.
+        for statement in body.flattened where statement.template != nil {
+            #expect(tagged.contains("id=\"\(numbers[statement.id]!)\""))
+        }
+        // The reader ignores the ids, so a tagged fragment reads back as the plain one.
+        let read = try #require(FPRGWriter.statements(fromFragment: tagged))
+        #expect(FPRGWriter.fragment(read) == FPRGWriter.fragment(body))
+    }
+
     @Test func treeEditing() {
         let inner = output("1")
         let loop = Statement(.while(.init(expression: "true", body: [inner])))

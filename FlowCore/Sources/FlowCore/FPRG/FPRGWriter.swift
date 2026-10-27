@@ -47,6 +47,12 @@ public enum FPRGWriter {
         element("body", children: statements, indent: 0)
     }
 
+    /// Like `fragment(_:)`, but every shape carries an `id` attribute, so a reader such as
+    /// an AI assistant can point at one. The reader ignores the attribute.
+    public static func fragment(_ statements: [Statement], id: @escaping (Statement) -> String) -> String {
+        element("body", children: statements, indent: 0, tag: id)
+    }
+
     /// Parses a fragment written by `fragment(_:)`; statements get fresh identifiers.
     /// The pasteboard can hold anything another app put there, so it's parsed as carefully as a file.
     public static func statements(fromFragment string: String) -> [Statement]? {
@@ -67,10 +73,10 @@ public enum FPRGWriter {
 
     static func bool(_ value: Bool) -> String { value ? "True" : "False" }
 
-    static func element(_ name: String, children: [Statement], indent: Int) -> String {
+    static func element(_ name: String, children: [Statement], indent: Int, tag: ((Statement) -> String)? = nil) -> String {
         if children.isEmpty { return "\(pad(indent))<\(name)/>\n" }
         var out = "\(pad(indent))<\(name)>\n"
-        for child in children { out += statement(child, indent: indent + 1) }
+        for child in children { out += statement(child, indent: indent + 1, tag: tag) }
         out += "\(pad(indent))</\(name)>\n"
         return out
     }
@@ -80,16 +86,24 @@ public enum FPRGWriter {
         return "\(pad(indent))<\(name)\(attrs)/>\n"
     }
 
-    static func container(_ name: String, _ attributes: [(String, String)], body: [Statement], indent: Int) -> String {
+    static func container(_ name: String, _ attributes: [(String, String)], body: [Statement], indent: Int,
+                          tag: ((Statement) -> String)? = nil) -> String {
         let attrs = attributes.map { " \($0.0)=\"\(escape($0.1))\"" }.joined()
         if body.isEmpty { return "\(pad(indent))<\(name)\(attrs)/>\n" }
         var out = "\(pad(indent))<\(name)\(attrs)>\n"
-        for child in body { out += statement(child, indent: indent + 1) }
+        for child in body { out += statement(child, indent: indent + 1, tag: tag) }
         out += "\(pad(indent))</\(name)>\n"
         return out
     }
 
-    static func statement(_ statement: Statement, indent: Int) -> String {
+    static func statement(_ statement: Statement, indent: Int, tag: ((Statement) -> String)? = nil) -> String {
+        let id: [(String, String)] = tag.map { [("id", $0(statement))] } ?? []
+        func leaf(_ name: String, _ attributes: [(String, String)], indent: Int) -> String {
+            FPRGWriter.leaf(name, id + attributes, indent: indent)
+        }
+        func container(_ name: String, _ attributes: [(String, String)], body: [Statement], indent: Int) -> String {
+            FPRGWriter.container(name, id + attributes, body: body, indent: indent, tag: tag)
+        }
         switch statement.kind {
         case .declare(let s):
             return leaf("declare", [("name", s.names), ("type", s.type.rawValue), ("array", bool(s.isArray)), ("size", s.size)], indent: indent)
@@ -100,9 +114,10 @@ public enum FPRGWriter {
         case .output(let s):
             return leaf("output", [("expression", s.expression), ("newline", bool(s.newline))], indent: indent)
         case .if(let s):
-            var out = "\(pad(indent))<if expression=\"\(escape(s.expression))\">\n"
-            out += element("then", children: s.thenBody, indent: indent + 1)
-            out += element("else", children: s.elseBody, indent: indent + 1)
+            let attrs = (id + [("expression", s.expression)]).map { " \($0.0)=\"\(escape($0.1))\"" }.joined()
+            var out = "\(pad(indent))<if\(attrs)>\n"
+            out += element("then", children: s.thenBody, indent: indent + 1, tag: tag)
+            out += element("else", children: s.elseBody, indent: indent + 1, tag: tag)
             out += "\(pad(indent))</if>\n"
             return out
         case .while(let s):

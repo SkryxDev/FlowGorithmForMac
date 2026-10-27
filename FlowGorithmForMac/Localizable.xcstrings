@@ -151,6 +151,16 @@
         }
       }
     },
+    "AI assistant": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistente AI"
+          }
+        }
+      }
+    },
     "About FlowGorithmForMac": {
       "localizations": {
         "it": {
@@ -191,16 +201,6 @@
         }
       }
     },
-    "Add Function": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aggiungi funzione"
-          }
-        }
-      }
-    },
     "Add Function…": {
       "localizations": {
         "it": {
@@ -227,6 +227,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aggiungi un blocco qui"
+          }
+        }
+      }
+    },
+    "Add an output that says “Well done!” at the end.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scrivi “Bravo!” alla fine del programma"
+          }
+        }
+      }
+    },
+    "Added %lld shapes": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunti %lld blocchi"
+          }
+        }
+      }
+    },
+    "Added a shape": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunto un blocco"
+          }
+        }
+      }
+    },
+    "Added the function %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunta la funzione %@"
           }
         }
       }
@@ -341,12 +381,42 @@
         }
       }
     },
+    "Ask what your flowchart does or why it fails, or say what to change: the assistant adds, edits and moves shapes for you, live.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi cosa fa il tuo diagramma o perché non funziona, oppure di' cosa cambiare: l'assistente aggiunge, modifica e sposta i blocchi per te, in tempo reale."
+          }
+        }
+      }
+    },
+    "Ask, or describe a change…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiedi, o descrivi una modifica…"
+          }
+        }
+      }
+    },
     "Assign": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Assegnazione"
+          }
+        }
+      }
+    },
+    "Assistant options": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opzioni dell'assistente"
           }
         }
       }
@@ -490,6 +560,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Annulla"
+          }
+        }
+      }
+    },
+    "Changed a shape": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modificato un blocco"
           }
         }
       }
@@ -734,6 +814,26 @@
         }
       }
     },
+    "Daily limit": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limite giornaliero"
+          }
+        }
+      }
+    },
+    "Daily usage: %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilizzo giornaliero: %@"
+          }
+        }
+      }
+    },
     "Declare": {
       "localizations": {
         "it": {
@@ -800,6 +900,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Elimina funzione"
+          }
+        }
+      }
+    },
+    "Deleted %lld shapes": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminati %lld blocchi"
+          }
+        }
+      }
+    },
+    "Deleted a shape": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminato un blocco"
+          }
+        }
+      }
+    },
+    "Deleted the function %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminata la funzione %@"
           }
         }
       }
@@ -1097,6 +1227,16 @@
         }
       }
     },
+    "Finish signing in in your browser.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completa l'accesso nel browser."
+          }
+        }
+      }
+    },
     "Finished": {
       "localizations": {
         "it": {
@@ -1113,6 +1253,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adatta il disegno"
+          }
+        }
+      }
+    },
+    "Fix the error: “%@”": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risolvi l'errore: “%@”"
+          }
+        }
+      }
+    },
+    "Fix with AI": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Risolvi con l'AI"
           }
         }
       }
@@ -1177,6 +1337,16 @@
         }
       }
     },
+    "Function": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funzione"
+          }
+        }
+      }
+    },
     "Function call": {
       "localizations": {
         "it": {
@@ -1203,6 +1373,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Le funzioni ricevono parametri e possono restituire un valore tramite una variabile."
+          }
+        }
+      }
+    },
+    "Go back to FlowGorithmForMac to try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Torna su FlowGorithmForMac per riprovare."
           }
         }
       }
@@ -1346,6 +1526,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Argomento non valido per %@."
+          }
+        }
+      }
+    },
+    "Is there a mistake in this flowchart?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'è un errore in questo diagramma?"
+          }
+        }
+      }
+    },
+    "It uses free AI models through OpenRouter. Sign in with your Google account or email: it's free, with about 50 requests a day.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usa modelli AI gratuiti tramite OpenRouter. Accedi con il tuo account Google o con l'email: è gratis, con circa 50 richieste al giorno."
           }
         }
       }
@@ -1503,6 +1703,16 @@
         }
       }
     },
+    "Moved a shape": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spostato un blocco"
+          }
+        }
+      }
+    },
     "Moves the turtle back to the center, facing up.": {
       "localizations": {
         "it": {
@@ -1539,6 +1749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Neon"
+          }
+        }
+      }
+    },
+    "New Conversation": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova conversazione"
           }
         }
       }
@@ -1679,6 +1899,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Apri %@ in scrittura"
+          }
+        }
+      }
+    },
+    "OpenRouter Account…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account OpenRouter…"
+          }
+        }
+      }
+    },
+    "OpenRouter no longer accepts this app's key. Sign in again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenRouter non accetta più la chiave di questa app. Accedi di nuovo."
+          }
+        }
+      }
+    },
+    "OpenRouter refused the request (%lld): %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenRouter ha rifiutato la richiesta (%lld): %@"
+          }
+        }
+      }
+    },
+    "OpenRouter sign-in failed: %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesso a OpenRouter non riuscito: %@"
           }
         }
       }
@@ -1903,16 +2163,6 @@
         }
       }
     },
-    "Program Info": {
-      "localizations": {
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Informazioni sul programma"
-          }
-        }
-      }
-    },
     "Program Info…": {
       "localizations": {
         "it": {
@@ -2069,6 +2319,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ripete il corpo finché l'espressione è vera. Il controllo avviene prima di ogni giro."
+          }
+        }
+      }
+    },
+    "Resets %@": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si azzera %@"
           }
         }
       }
@@ -2283,6 +2543,16 @@
         }
       }
     },
+    "Send": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia"
+          }
+        }
+      }
+    },
     "Shapes": {
       "localizations": {
         "it": {
@@ -2373,12 +2643,62 @@
         }
       }
     },
+    "Sign In with OpenRouter": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accedi con OpenRouter"
+          }
+        }
+      }
+    },
+    "Sign Out": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esci"
+          }
+        }
+      }
+    },
+    "Sign in with OpenRouter first.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prima accedi con OpenRouter."
+          }
+        }
+      }
+    },
+    "Sign-in was not completed": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesso non completato"
+          }
+        }
+      }
+    },
     "Slow": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Lenta"
+          }
+        }
+      }
+    },
+    "Some changes didn't come out right. Check the flowchart, or ask the assistant again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alcune modifiche non sono riuscite bene. Controlla il diagramma, o chiedi di nuovo all'assistente."
           }
         }
       }
@@ -2543,6 +2863,16 @@
         }
       }
     },
+    "The browser came back without completing the sign-in. Try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il browser è tornato senza completare l'accesso. Riprova."
+          }
+        }
+      }
+    },
     "The condition must be true or false, but it's a %@.": {
       "localizations": {
         "it": {
@@ -2603,6 +2933,16 @@
         }
       }
     },
+    "The free models are busy right now. Try again in a minute.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I modelli gratuiti sono occupati in questo momento. Riprova tra un minuto."
+          }
+        }
+      }
+    },
     "The function “%@” doesn't exist.": {
       "localizations": {
         "it": {
@@ -2629,6 +2969,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "La funzione “%1$@” deve dichiarare la variabile restituita “%2$@”."
+          }
+        }
+      }
+    },
+    "The model didn't answer. Try again or rephrase the request.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il modello non ha risposto. Riprova o riformula la richiesta."
           }
         }
       }
@@ -2663,12 +3013,42 @@
         }
       }
     },
+    "The program is running. Stop it to let the assistant change the flowchart.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il programma è in esecuzione. Fermalo per lasciare che l'assistente modifichi il diagramma."
+          }
+        }
+      }
+    },
+    "The program stopped with an error": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il programma si è fermato con un errore"
+          }
+        }
+      }
+    },
     "The program uses too much memory: its arrays or texts are too large.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Il programma usa troppa memoria: i suoi vettori o testi sono troppo grandi."
+          }
+        }
+      }
+    },
+    "The sign-in took too long. Try again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'accesso ha richiesto troppo tempo. Riprova."
           }
         }
       }
@@ -2723,12 +3103,32 @@
         }
       }
     },
+    "Thinking…": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sto pensando…"
+          }
+        }
+      }
+    },
     "This expression is too long or too deeply nested.": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
             "value": "Questa espressione è troppo lunga o troppo annidata."
+          }
+        }
+      }
+    },
+    "This limit doesn't depend on FlowGorithmForMac: it's the daily allowance for free models of your OpenRouter account, shared by every app you use it with.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo limite non dipende da FlowGorithmForMac: è la quota giornaliera di modelli gratuiti del tuo account OpenRouter, condivisa da tutte le app con cui lo usi."
           }
         }
       }
@@ -2749,6 +3149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vero"
+          }
+        }
+      }
+    },
+    "Try asking": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova a chiedere"
           }
         }
       }
@@ -2873,12 +3283,12 @@
         }
       }
     },
-    "Untitled program": {
+    "Usage limits · OpenRouter": {
       "localizations": {
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Programma senza titolo"
+            "value": "Limiti di utilizzo · OpenRouter"
           }
         }
       }
@@ -2963,6 +3373,16 @@
         }
       }
     },
+    "What does this program do?": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cosa fa questo programma?"
+          }
+        }
+      }
+    },
     "While": {
       "localizations": {
         "it": {
@@ -3013,6 +3433,46 @@
         }
       }
     },
+    "You can close this tab and go back to FlowGorithmForMac.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puoi chiudere questa scheda e tornare su FlowGorithmForMac."
+          }
+        }
+      }
+    },
+    "You're signed in": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesso effettuato"
+          }
+        }
+      }
+    },
+    "You've used today's free requests. They come back at %@.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai usato le richieste gratuite di oggi. Tornano alle %@."
+          }
+        }
+      }
+    },
+    "Your flowchart and your messages are sent to OpenRouter and to the model's provider. Free models may use them to improve.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il diagramma e i tuoi messaggi vengono inviati a OpenRouter e al fornitore del modello. I modelli gratuiti possono usarli per migliorarsi."
+          }
+        }
+      }
+    },
     "Zoom In": {
       "localizations": {
         "it": {
@@ -3051,6 +3511,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inizio"
+          }
+        }
+      }
+    },
+    "free models": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "modelli gratuiti"
           }
         }
       }

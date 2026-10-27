@@ -25,7 +25,8 @@ FlowGorithmForMac is a flowchart programming environment built from scratch in S
 macOS 26 Tahoe and later. Build a program by inserting shapes on the chart, run it one shape at a time
 while you watch the variables change, and read the same program as Python, Java or C++ next to it.
 It opens and saves the `.fprg` files of [Flowgorithm](http://www.flowgorithm.org), so exercises and
-assignments move freely between a Windows PC at school and a Mac at home.
+assignments move freely between a Windows PC at school and a Mac at home. An optional AI assistant explains
+programs and changes the chart for you, live, with free models.
 
 ## Features
 
@@ -39,14 +40,18 @@ assignments move freely between a Windows PC at school and a Mac at home.
   and errors are explained in plain words.
 - **Run, step, pause** — adjustable speed from full speed to very slow, breakpoints, and the running shape
   highlighted and scrolled into view. Runaway recursion stops with a clear error instead of freezing.
+- **AI assistant** — ask what a program does or why it fails, or say what to change: it adds, edits and
+  moves shapes on the chart while you watch, and fixes run errors with one click. Free, with a login
+  (see [AI assistant](#ai-assistant)).
 - **Panels** — a chat-style console (or plain text), a variable watch colored by type with arrays,
-  a turtle graphics canvas, and the source code. Show one or two at a time.
+  a turtle graphics canvas, and the source code. Show one or two at a time. The functions are a menu
+  next to the run status in the toolbar.
 - **Live source code** in Python, Java, C++, C#, JavaScript, TypeScript, Swift and Kotlin, plus pseudocode
   in English and Italian. Each line is linked to its shape; copy it or save it to a file.
 - **Five color schemes** — Classic, Modern, Pastel, Neon and Black & White, all following light and dark mode.
 - **Export** the chart to PNG, PDF or SVG, or print it.
 - **English and Italian**, following the system language or chosen in Settings.
-- **Lightweight** — a 3.6 MB app with no dependencies that stays responsive even when a program prints
+- **Lightweight** — a 4 MB app with no dependencies that stays responsive even when a program prints
   millions of lines.
 
 ### Keyboard shortcuts
@@ -86,6 +91,32 @@ saves the chart as an image.
 
 It needs a Mac with Apple silicon and macOS 26 Tahoe or later. The app opens on an empty flowchart,
 ready to edit and save.
+
+## AI assistant
+
+The assistant lives in the column on the left (the sidebar button shows or hides it). It answers in the
+app's language, Italian or English.
+
+- **Sign in once** with **Sign In with OpenRouter**: the browser opens, you log in to
+  [OpenRouter](https://openrouter.ai) with Google or an email and authorize the app. There's no API key to
+  copy: OpenRouter gives the app a key of your own, kept in a private file on your Mac.
+- **Free models** — requests go to Google's Gemma 4 31B, and to other free models when it's busy.
+  The list is checked against OpenRouter's catalog at launch, since the free models change often.
+- **Daily limit** — OpenRouter allows 50 free-model requests a day per account (1,000 after a one-time
+  10 $ top-up), reset at midnight UTC. The ring in the assistant's header fills up as you use them; click it
+  for the percentage and the reset time. The limit belongs to your OpenRouter account, not to the app.
+- **One request per message** — the model gets the whole chart and makes every change in one reply. It's
+  asked again only when a change fails a check, at most twice.
+- **Live and undoable** — changes appear on the chart as they're made, and one <kbd>⌘</kbd><kbd>Z</kbd>
+  takes back everything a reply did.
+- **Checked before you run** — after each reply the app checks the chart the way the interpreter would:
+  variables declared twice, inside a loop or never, unknown functions, and values of the wrong type
+  (a number used with `or`, text added with `+`). New problems go straight back to the model to fix.
+- **Fix with AI** — when a run stops with an error, the error banner and the assistant offer to fix it:
+  the app writes the request, with the function and the shape where it happened.
+
+Your flowchart and your messages are sent to OpenRouter and to the model's provider; free models may use
+them to improve. FlowGorithmForMac isn't affiliated with OpenRouter or Google.
 
 ## Safe with flowcharts from others
 
@@ -157,9 +188,10 @@ FlowCore/                 Swift package with no UI, tested with swift test
 ├── Model/                Programs, functions, shapes and data types
 ├── FPRG/                 .fprg reader and writer
 ├── Expressions/          Lexer and parser
-├── Runtime/              Compiler, interpreter, built-in functions, errors
+├── Runtime/              Compiler, interpreter, built-in functions, linter, errors
 └── CodeGen/              Python, Java, C++, C#, JavaScript, TypeScript, Swift, Kotlin, pseudocode
 FlowGorithmForMac/        The SwiftUI app
+├── AI/                   The assistant: OpenRouter sign-in and client, chat, tools that edit the chart
 ├── App/                  Entry point, menus, document and settings keys
 ├── Chart/                Chart layout, shapes, the insert menu, export
 ├── Editors/              Shape and function editors, the expression field
@@ -167,7 +199,7 @@ FlowGorithmForMac/        The SwiftUI app
 ├── Panels/               Console, variables, turtle and source code
 ├── Settings/             Settings window
 ├── Theme/                The five color schemes
-└── Views/                Document window and sidebar
+└── Views/                Document window and functions menu
 Scripts/                  DMG packaging, string catalog sync, icon drawing
 ```
 
@@ -184,6 +216,11 @@ Scripts/                  DMG packaging, string catalog sync, icon drawing
   which shape it came from.
 - The chart has its own layout engine; shapes are drawn with SwiftUI, and SVG export has its own writer.
   Window layout, panels and settings are remembered between launches.
+- The assistant signs in with OAuth and PKCE through the browser, with a callback on `localhost`, and talks
+  to OpenRouter's Chat Completions API. The model sees the chart as `.fprg` XML with short ids and changes it
+  with tools (insert, update, delete and move shapes, add or delete functions); slips in the XML it writes,
+  such as unescaped quotes or `<`, are repaired before reading. A reply is applied to a copy of the program
+  and written back once, which makes it a single Undo, and the linter in FlowCore checks the result.
 
 ## License
 

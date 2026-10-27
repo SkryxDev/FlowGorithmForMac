@@ -54,6 +54,7 @@ struct DocumentView: View {
 
     @State private var editor = EditorModel()
     @State private var session = RunSession()
+    @State private var chat = AIChat()
     @AppStorage(SettingsKey.theme) private var themeID = Theme.classic.id
     @AppStorage(SettingsKey.runSpeed) private var savedSpeed = 1.0
     @AppStorage(SettingsKey.maxStack) private var maxStack = 5000
@@ -77,7 +78,9 @@ struct DocumentView: View {
 
     var body: some View {
         NavigationSplitView(columnVisibility: sidebarVisibility) {
-            SidebarView(program: $document.program, editor: editor, locked: locked)
+            // The AI assistant; the functions live in the toolbar.
+            AIPanel(chat: chat, session: session, context: toolContext)
+                .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 480)
         } detail: {
             FlowchartView(program: $document.program, editor: editor, session: session)
                 .overlay(alignment: .bottomTrailing) { zoomControls }
@@ -131,8 +134,9 @@ struct DocumentView: View {
             if editor.functionID == nil { editor.functionID = document.program.main?.id }
         }
         .onDisappear {
-            // A closed window must not keep a program running in the background.
+            // A closed window must not keep a program running, or the assistant working, in the background.
             session.stop()
+            chat.stop()
         }
         .onChange(of: session.speed) { _, speed in savedSpeed = speed }
         .onChange(of: session.ignoreBreakpoints) { _, ignore in savedIgnoreBreakpoints = ignore }
@@ -175,6 +179,7 @@ struct DocumentView: View {
             return
         }
         guard !session.state.isActive else { return }
+        chat.runStarted()
         if let error = Interpreter.check(document.program) {
             reveal(error)
         }
@@ -187,8 +192,21 @@ struct DocumentView: View {
     }
 
     func step() {
-        if !session.state.isActive { editor.show(usesTurtle ? .turtle : .console) }
+        if !session.state.isActive {
+            chat.runStarted()
+            editor.show(usesTurtle ? .turtle : .console)
+        }
         session.step(document.program, baseDirectory: baseDirectory, maxDepth: maxStack)
+    }
+
+    func toolContext() -> ToolContext {
+        ToolContext(program: $document.program, editor: editor, locked: session.state.isActive)
+    }
+
+    /// Shows the assistant and asks it to fix the error.
+    func fixWithAI(_ error: RuntimeError) {
+        showsSidebar = true
+        chat.fix(error, context: toolContext)
     }
 
     /// Jumps to the function and shape where a problem is.
@@ -282,8 +300,9 @@ struct DocumentView: View {
             SpeedControl(session: session)
         }
 
-        ToolbarItem(placement: .principal) {
+        ToolbarItemGroup(placement: .principal) {
             StatusChip(session: session)
+            FunctionMenu(program: $document.program, editor: editor, locked: locked)
         }
 
         ToolbarItemGroup(placement: .primaryAction) {
@@ -353,6 +372,11 @@ struct DocumentView: View {
                 if error.statementID != nil {
                     Button("Show") { reveal(error) }
                         .buttonStyle(.glass)
+                }
+                if OpenRouterAccount.shared.status == .signedIn && error != chat.lastFixedError {
+                    Button("Fix with AI", systemImage: "sparkles") { fixWithAI(error) }
+                        .buttonStyle(.glassProminent)
+                        .disabled(chat.isWorking)
                 }
             }
             .padding(14)
