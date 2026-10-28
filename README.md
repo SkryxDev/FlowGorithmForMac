@@ -186,7 +186,9 @@ To build the drag-to-install disk image used for releases:
 Scripts/make-dmg.sh 1.0.0
 ```
 
-The image is written to `dist/FlowGorithmForMac-<version>.dmg` and its SHA-256 is printed. The app is signed
+The image is written to `dist/FlowGorithmForMac-<version>.dmg` and its SHA-256 is printed. Its window
+background, `Scripts/dmg-background.tiff`, is drawn by `swift Scripts/make-dmg-background.swift
+Scripts/dmg-background.tiff`. The app is signed
 ad hoc; set `SIGN_IDENTITY="Developer ID Application: …"` and `NOTARY_PROFILE` to sign and notarize it
 with your own Developer ID (see the script).
 
