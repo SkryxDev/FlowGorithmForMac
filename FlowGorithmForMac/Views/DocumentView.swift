@@ -79,6 +79,8 @@ struct DocumentView: View {
                 set: { showsSidebar = $0 != .detailOnly })
     }
     var locked: Bool { session.state.isActive }
+    /// Editing waits while the program runs or a proposal of the assistant is on the chart.
+    var editingBlocked: Bool { locked || editor.proposal != nil }
 
     var body: some View {
         NavigationSplitView(columnVisibility: sidebarVisibility) {
@@ -87,11 +89,14 @@ struct DocumentView: View {
                 .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 480)
         } detail: {
             FlowchartView(program: $document.program, editor: editor, session: session)
+                // Room for the proposal bar above the chart, so it doesn't cover the first shapes.
+                .safeAreaPadding(.top, editor.proposal != nil ? 48 : 0)
                 .overlay(alignment: .bottomTrailing) { zoomControls }
                 .overlay(alignment: .bottom) {
                     errorBanner
                     longRunBanner
                 }
+                .overlay(alignment: .top) { proposalBar }
                 .navigationTitle(editor.currentFunction(in: document.program).map(\.isMain) == false
                                  ? editor.currentFunction(in: document.program)!.name : "")
         }
@@ -153,6 +158,11 @@ struct DocumentView: View {
         .onChange(of: editor.bottomPanel) { _, tab in savedBottomPanel = tab.rawValue }
         .onChange(of: editor.showsBottomPanel) { _, shows in savedShowsBottomPanel = shows }
         .onChange(of: editor.zoom) { _, zoom in savedZoom = zoom }
+        // The chart shows the proposal still waiting in the chat, and nothing else: one answered,
+        // replaced or cleared disappears from the chart too.
+        .onChange(of: chat.pendingProposal?.proposal?.id) { _, id in
+            if editor.proposal?.id != id { editor.proposal = chat.pendingProposal?.proposal }
+        }
         .task(id: session.state) {
             // A program that keeps running at full speed without asking anything is probably stuck.
             runsLong = false
@@ -254,11 +264,11 @@ struct DocumentView: View {
             isRunning: session.state.isActive,
             isPaused: session.state == .paused,
             hasSelection: editor.selection != nil,
-            cut: { if let id = editor.selection, !locked { editor.cut(id, in: $document.program) } },
+            cut: { if let id = editor.selection, !editingBlocked { editor.cut(id, in: $document.program) } },
             copy: { if let id = editor.selection { editor.copy(id, in: document.program) } },
-            paste: { if !locked { editor.paste(in: $document.program) } },
-            delete: { if let id = editor.selection, !locked { editor.delete(id, in: $document.program) } },
-            duplicate: { if let id = editor.selection, !locked { editor.duplicate(id, in: $document.program) } },
+            paste: { if !editingBlocked { editor.paste(in: $document.program) } },
+            delete: { if let id = editor.selection, !editingBlocked { editor.delete(id, in: $document.program) } },
+            duplicate: { if let id = editor.selection, !editingBlocked { editor.duplicate(id, in: $document.program) } },
             zoomIn: { withAnimation(.snappy) { editor.zoomIn() } },
             zoomOut: { withAnimation(.snappy) { editor.zoomOut() } },
             resetZoom: { withAnimation(.snappy) { editor.resetZoom() } },
@@ -417,6 +427,39 @@ struct DocumentView: View {
             .padding(.bottom, 64)
             .padding(.horizontal, 20)
             .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    /// Over the chart while a proposal waits: the same answer as in the chat, where the user looks.
+    @ViewBuilder
+    var proposalBar: some View {
+        if editor.proposal != nil, let entry = chat.pendingProposal {
+            HStack(spacing: 10) {
+                Image(systemName: "lightbulb.fill")
+                    .foregroundStyle(AIMode.study.color)
+                Text("Proposed by the assistant")
+                    .font(.callout.weight(.medium))
+                // Without animation: the shapes jump straight to their new places, which reads better
+                // than every shape of the chart sliding at once.
+                Button("Reject", systemImage: "xmark") {
+                    chat.reject(entry, context: toolContext)
+                }
+                .buttonStyle(.glass)
+                .help("Leave the chart as it is")
+                Button("Accept", systemImage: "checkmark") {
+                    chat.accept(entry, context: toolContext)
+                }
+                .buttonStyle(.glassProminent)
+                .tint(AIMode.study.color)
+                .disabled(locked)
+                .help(locked ? "Stop the program to change the chart" : "Make these changes on the chart")
+            }
+            .controlSize(.small)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .glassEffect(.regular, in: .capsule)
+            .padding(.top, 14)
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 

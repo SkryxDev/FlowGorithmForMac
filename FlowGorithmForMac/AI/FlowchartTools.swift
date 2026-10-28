@@ -19,6 +19,10 @@ struct ToolOutcome {
     var summary: String?
     /// The shapes added, changed or moved, to point them out on the chart.
     var changed: [Statement.ID] = []
+    /// In study mode: what the change would be, shown to the user to accept or reject.
+    var proposed: [Proposal.Change] = []
+    /// Shapes to draw in the chat as an example.
+    var example: [Statement]?
 }
 
 /// The flowchart as the model sees it, and the functions it calls to change it.
@@ -50,6 +54,19 @@ final class FlowchartTools {
     }
 
     // MARK: Listing
+
+    /// A reply with the shape ids models mention anyway (s3) written as the shapes' contents.
+    func readable(_ text: String, in program: Program) -> String {
+        guard let pattern = try? Regex(#"\b[sS](\d{1,4})\b"#) else { return text }
+        return text.replacing(pattern) { match in
+            let name = "s" + text[match.range].dropFirst()
+            guard let id = statementIDs[name],
+                  let shape = program.functions.lazy.compactMap({ $0.body.statement(withID: id) }).first else {
+                return String(text[match.range])
+            }
+            return "“\(ShapeText.label(shape))”"
+        }
+    }
 
     func listing(_ program: Program) -> String {
         var out = ""
@@ -131,22 +148,39 @@ final class FlowchartTools {
         a change fails. An if or a loop can be inserted together with the shapes inside it.
         """
 
-    static let studyRules = """
-        Study mode is on: the user is a student learning to program, and the goal is that they find the \
-        solution themselves. You can't change the flowchart and you never write the finished solution, \
-        neither as shapes nor as code, not even the corrected expression. Instead: explain the idea behind \
-        the problem, with a tiny example unrelated to their exercise when it helps; say which shape to look \
-        at and why (select_shape shows it on the chart); end with one guiding question or one hint. Give one \
-        hint at a time, a more precise one only when they're still stuck. Praise what is already right. If \
-        they ask you to just do it, say that Study Mode is on and that the switch at the top of the \
-        assistant turns on Auto Mode.
-        """
+    static var studyRules: String { """
+        Study mode is on: the user is a student learning to program, and the goal is that they understand \
+        and find the solution themselves. Explain the idea behind the problem; say which shape to look at \
+        and why (select_shape shows it on the chart); end with one guiding question or one hint. Give one \
+        hint at a time, a more precise one only when they're still stuck. Praise what is already right.
+
+        In study mode your changes aren't applied: the chart shows them as a proposal, the old shapes \
+        faded and the new ones below them, and the user presses “\(String(localized: "Accept"))” or \
+        “\(String(localized: "Reject"))”. So when the user asks for a specific change (renaming a variable \
+        everywhere, fixing a shape, adding a step) call insert_shapes, update_shape or delete_shapes just as \
+        you would to make it, with every shape the change touches, and say in your text what you propose \
+        and why. Don't ask whether to show it: propose it right away, the two buttons are how the user \
+        decides. Don't use them to hand over the whole solution of an exercise they're solving: give hints \
+        first. show_example draws a small example flowchart in the chat, with names different from their \
+        exercise, to show how something is built. Never write tool calls, XML or shape ids in your text.
+        """ }
 
     // MARK: Definitions
 
-    /// The tools for a mode: in study mode the assistant can only point at shapes.
+    /// The tools for a mode. In study mode the changes become proposals the user accepts or rejects,
+    /// and the assistant can draw examples in the chat; it can't move shapes or add functions.
     static func definitions(for mode: AIMode) -> [JSON] {
-        mode == .study ? definitions.filter { $0["function"]?["name"]?.string == "select_shape" } : definitions
+        guard mode == .study else { return definitions }
+        let proposable: Set<String> = ["insert_shapes", "update_shape", "delete_shapes", "select_shape"]
+        return definitions.filter { proposable.contains($0["function"]?["name"]?.string ?? "") } + studyDefinitions
+    }
+
+    static var studyDefinitions: [JSON] {
+        [
+            tool("show_example", "Draw a small example flowchart in the chat, to show how something is built. It doesn't change the user's chart.",
+                 ["xml": ["type": "string", "description": "The shapes in order, as .fprg XML elements; ifs and loops can contain their shapes."]],
+                 required: ["xml"]),
+        ]
     }
 
     static var definitions: [JSON] {
@@ -200,13 +234,30 @@ final class FlowchartTools {
 
     // MARK: Running
 
+    static let studyTools: Set<String> = ["select_shape", "show_example", "insert_shapes", "update_shape", "delete_shapes",
+                                          "suggest_changes", "check_program"]
+
     func run(name: String, arguments: String, context: ToolContext, mode: AIMode = .auto) -> ToolOutcome {
+        var outcome = perform(name: name, arguments: arguments, context: context, mode: mode)
+        if mode == .study && !outcome.proposed.isEmpty {
+            // Nothing changed yet: the chat lists the proposal instead of the changes.
+            outcome.summary = nil
+            outcome.output += " This is a proposal: the user sees it on the chart and accepts or rejects it."
+        }
+        return outcome
+    }
+
+    private func perform(name: String, arguments: String, context: ToolContext, mode: AIMode) -> ToolOutcome {
         var args = JSON.parse(Data(arguments.utf8)) ?? [:]
         // Some models encode the arguments twice, as a string holding the JSON object.
         if let inner = args.string, let decoded = JSON.parse(Data(inner.utf8)) { args = decoded }
         do {
-            if mode == .study && name != "select_shape" {
-                throw ToolError("Study mode is on, so you can't change the flowchart. Give the user a hint instead.")
+            let known = Self.studyTools.union(["move_shape", "add_function", "delete_function"])
+            if !known.contains(name) {
+                throw ToolError("There's no tool named “\(name)”. Use insert_shapes, update_shape or delete_shapes.")
+            }
+            if mode == .study && !Self.studyTools.contains(name) {
+                throw ToolError("In study mode you can only propose added, changed or deleted shapes. Explain the rest to the user instead.")
             }
             if context.locked && !["select_shape", "check_program"].contains(name) {
                 throw ToolError("The program is running, so the chart can't change. Ask the user to stop it first.")
@@ -219,6 +270,8 @@ final class FlowchartTools {
             case "add_function": return try addFunction(args, context)
             case "delete_function": return try deleteFunction(args, context)
             case "select_shape": return try select(args, context)
+            case "show_example": return try example(args)
+            case "suggest_changes": return try suggest(args, context)
             case "check_program": return check(context)
             default: throw ToolError("Unknown tool \(name).")
             }
@@ -233,6 +286,7 @@ final class FlowchartTools {
         let shapes = try parse(args["xml"]?.string)
         var program = context.program.wrappedValue
         let (index, point) = try insertionPoint(args, in: program)
+        let anchor = try anchor(args, in: program, function: index)
         for (offset, shape) in shapes.enumerated() {
             program.functions[index].body.insert(shape, at: InsertionPoint(block: point.block, index: point.index + offset))
         }
@@ -242,7 +296,8 @@ final class FlowchartTools {
         let count = shapes.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.count
         return ToolOutcome(output: "Inserted \(names.joined(separator: ", ")) in \(program.functions[index].name)." + problems(in: shapes),
                            summary: count == 1 ? String(localized: "Added “\(ShapeText.label(shapes[0]))”") : String(localized: "Added \(count) shapes"),
-                           changed: shapes.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.map(\.id))
+                           changed: shapes.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.map(\.id),
+                           proposed: [.insert(shapes, at: anchor)])
     }
 
     private func update(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {
@@ -251,16 +306,13 @@ final class FlowchartTools {
         guard shapes.count == 1 else { throw ToolError("update_shape takes exactly one element.") }
         var program = context.program.wrappedValue
         guard let original = program.functions[functionIndex].body.statement(withID: id) else { throw ToolError("Shape not found.") }
-        var updated = shapes[0]
-        updated.id = original.id
         // Without children in the XML, the shapes already inside an if or loop stay.
-        if updated.blocks.count == original.blocks.count, updated.blocks.allSatisfy(\.isEmpty) {
-            updated.blocks = original.blocks
-        }
+        let updated = Self.replacing(original, with: shapes[0])
         program.functions[functionIndex].body.replaceStatement(updated)
         context.program.wrappedValue = program
         show(id, in: program.functions[functionIndex], context)
-        return ToolOutcome(output: "Updated \(shortID(id))." + problems(in: [updated]), summary: String(localized: "Changed “\(ShapeText.label(updated))”"), changed: [id])
+        return ToolOutcome(output: "Updated \(shortID(id))." + problems(in: [updated]), summary: String(localized: "Changed “\(ShapeText.label(updated))”"), changed: [id],
+                           proposed: [.replace(updated, keepsChildren: shapes[0].blocks.allSatisfy(\.isEmpty) && !original.blocks.isEmpty)])
     }
 
     private func delete(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {
@@ -268,10 +320,12 @@ final class FlowchartTools {
         guard !names.isEmpty else { throw ToolError("No ids given.") }
         var program = context.program.wrappedValue
         var removed = 0
+        var proposed: [Proposal.Change] = []
         for name in names {
             let (id, functionIndex) = try find(name, in: program)
             if let shape = program.functions[functionIndex].body.removeStatement(withID: id) {
                 removed += 1 + shape.blocks.flatMap(\.flattened).count
+                proposed.append(.delete(id))
             }
         }
         context.program.wrappedValue = program
@@ -279,7 +333,8 @@ final class FlowchartTools {
             context.editor.selection = nil
         }
         return ToolOutcome(output: "Deleted \(names.joined(separator: ", ")).",
-                           summary: removed == 1 ? String(localized: "Deleted a shape") : String(localized: "Deleted \(removed) shapes"))
+                           summary: removed == 1 ? String(localized: "Deleted a shape") : String(localized: "Deleted \(removed) shapes"),
+                           proposed: proposed)
     }
 
     private func move(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {
@@ -344,6 +399,41 @@ final class FlowchartTools {
         return ToolOutcome(output: "Selected \(shortID(id)).")
     }
 
+    private func example(_ args: JSON) throws -> ToolOutcome {
+        let shapes = try parse(args["xml"]?.string)
+        if shapes.flatMap({ [$0] + $0.blocks.flatMap(\.flattened) }).count > 30 {
+            throw ToolError("Keep examples small: at most 30 shapes.")
+        }
+        let found = problems(in: shapes)
+        if !found.isEmpty { throw ToolError("The example has mistakes." + found) }
+        return ToolOutcome(output: "The example is drawn in the chat.", example: shapes)
+    }
+
+    /// Several shape updates at once, as earlier versions of the app offered them in study mode.
+    private func suggest(_ args: JSON, _ context: ToolContext) throws -> ToolOutcome {
+        let items = args["changes"]?.array ?? []
+        guard !items.isEmpty else { throw ToolError("No changes given.") }
+        var combined = ToolOutcome(output: "")
+        for item in items {
+            let outcome = try update(item, context)
+            combined.output += (combined.output.isEmpty ? "" : " ") + outcome.output
+            combined.changed += outcome.changed
+            combined.proposed += outcome.proposed
+        }
+        return combined
+    }
+
+    /// A shape rewritten from XML, keeping the original's id and, when the XML leaves them out, the
+    /// shapes inside an if or a loop.
+    static func replacing(_ original: Statement, with shape: Statement) -> Statement {
+        var updated = shape
+        updated.id = original.id
+        if updated.blocks.count == original.blocks.count, updated.blocks.allSatisfy(\.isEmpty) {
+            updated.blocks = original.blocks
+        }
+        return updated
+    }
+
     private func check(_ context: ToolContext) -> ToolOutcome {
         guard let error = Interpreter.check(context.program.wrappedValue) else {
             return ToolOutcome(output: "No problems found.")
@@ -371,8 +461,8 @@ final class FlowchartTools {
 
     /// Fixes the slips models make most often in the XML they write, which would otherwise cost a
     /// request to correct: a Markdown code fence, an XML declaration, a whole function or file
-    /// around the shapes, and <, >, & or quotes left unescaped inside attribute values, as in
-    /// `expression="x < 5"` or `expression=""Well done!""`.
+    /// around the shapes, <, >, & or quotes left unescaped inside attribute values, as in
+    /// `expression="x < 5"` or `expression=""Well done!""`, and elements left open.
     static func repair(_ xml: String) -> String {
         var text = xml.trimmingCharacters(in: .whitespacesAndNewlines)
         if text.hasPrefix("```") {
@@ -414,7 +504,37 @@ final class FlowchartTools {
             }
             index = text.index(after: index)
         }
-        return out
+        return closingOpenTags(out)
+    }
+
+    /// The XML with every element closed and no end tag without its start. Models often write a
+    /// lone opening tag, as in `<if expression="x >= 60">` for an if whose branches stay the same;
+    /// the missing end tags go at the end, so that if is read with empty branches.
+    static func closingOpenTags(_ xml: String) -> String {
+        var result = ""
+        var open: [String] = []
+        var index = xml.startIndex
+        while let start = xml[index...].firstIndex(of: "<"), let end = xml[start...].firstIndex(of: ">") {
+            result += xml[index..<start]
+            let tag = xml[xml.index(after: start)..<end]
+            if tag.hasPrefix("/") {
+                let name = tag.dropFirst().trimmingCharacters(in: .whitespaces)
+                if let last = open.lastIndex(of: name) {
+                    // Elements opened inside it and never closed end here.
+                    result += open[(last + 1)...].reversed().map { "</\($0)>" }.joined()
+                    open.removeSubrange(last...)
+                    result += xml[start...end]
+                }
+            } else {
+                if !tag.hasPrefix("?"), !tag.hasPrefix("!"), !tag.hasSuffix("/") {
+                    open.append(String(tag.prefix { !$0.isWhitespace }))
+                }
+                result += xml[start...end]
+            }
+            index = xml.index(after: end)
+        }
+        result += xml[index...]
+        return result + open.reversed().map { "</\($0)>" }.joined()
     }
 
     /// A quote ends an attribute value only when another attribute, `>` or `/>` follows;
@@ -470,6 +590,21 @@ final class FlowchartTools {
             throw ToolError("The shape \(name) isn't in the flowchart anymore.")
         }
         return (id, index)
+    }
+
+    /// Where inserted shapes go, by the shapes and function around them, for a proposal.
+    private func anchor(_ args: JSON, in program: Program, function index: Int) throws -> Proposal.Anchor {
+        let position = args["position"]?.string ?? "end_of_function"
+        switch position {
+        case "after", "before":
+            let (id, _) = try find(args["target_id"]?.string, in: program)
+            return position == "after" ? .after(id) : .before(id)
+        case "start_of_branch", "end_of_branch":
+            let (id, _) = try find(args["target_id"]?.string, in: program)
+            return .branch(owner: id, branch: args["branch"]?.string == "else" ? 1 : 0, atEnd: position == "end_of_branch")
+        default:
+            return .function(program.functions[index].id, atEnd: position != "start_of_function")
+        }
     }
 
     private func insertionPoint(_ args: JSON, in program: Program) throws -> (Int, InsertionPoint) {

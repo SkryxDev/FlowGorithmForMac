@@ -3,7 +3,7 @@
 # GNU GPL v3 with additional attribution terms: see LICENSE and NOTICE.
 
 # Builds dist/FlowGorithmForMac-<version>.dmg: the app next to a link to Applications.
-# Usage: Scripts/make-dmg.sh <version>   (e.g. 1.0.0-beta). Build the Release app first.
+# Usage: Scripts/make-dmg.sh <version>   (e.g. 1.0.0). Build the Release app first.
 #
 # Optional, so the app opens without Gatekeeper warnings (needs an Apple Developer account):
 #   SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"   signs the app and the image

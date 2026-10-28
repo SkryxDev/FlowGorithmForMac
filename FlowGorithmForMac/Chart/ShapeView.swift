@@ -6,6 +6,8 @@ import SwiftUI
 
 nonisolated enum NodeHighlight: Equatable {
     case none, selected, executing, error, changed
+    /// A proposal on the chart: the old version of a shape, and the new one.
+    case ghost, proposed
 }
 
 /// One flowchart shape: outline, fill, detail lines and its label.
@@ -80,6 +82,10 @@ struct ShapeView: View {
                 .shadow(color: .red.opacity(0.6), radius: 6 * scale)
         case .changed:
             ChangedRing(outline: outline, scale: scale)
+        case .ghost:
+            EmptyView()
+        case .proposed:
+            ExecutingRing(outline: outline, scale: scale, color: AIMode.study.color, glow: AIMode.study.color)
         }
     }
 }
@@ -129,6 +135,8 @@ struct ShapeShadow: ViewModifier {
 struct ExecutingRing: View {
     let outline: NodeOutline
     let scale: CGFloat
+    var color: Color = .yellow
+    var glow: Color = .orange
 
     /// One full bright-dim cycle, matching the previous 0.6 s ease-in-out each way.
     static let period = 1.2
@@ -139,11 +147,11 @@ struct ExecutingRing: View {
             let bright = (1 - cos(2 * .pi * t / Self.period)) / 2
             ZStack {
                 outline
-                    .fill(Color.yellow.opacity(0.12 + 0.16 * bright))
+                    .fill(color.opacity(0.12 + 0.16 * bright))
                 outline
-                    .stroke(Color.yellow, lineWidth: (3 + 1.5 * bright) * scale)
+                    .stroke(color, lineWidth: (3 + 1.5 * bright) * scale)
                     .padding(-5 * scale)
-                    .shadow(color: .orange.opacity(0.5 + 0.5 * bright), radius: (6 + 8 * bright) * scale)
+                    .shadow(color: glow.opacity(0.5 + 0.5 * bright), radius: (6 + 8 * bright) * scale)
             }
             .scaleEffect(1 + 0.04 * bright)
         }

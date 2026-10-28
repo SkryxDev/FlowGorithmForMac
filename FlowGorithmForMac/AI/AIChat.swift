@@ -23,7 +23,8 @@ enum AIRequest {
 @Observable
 final class AIChat {
     struct Entry: Identifiable {
-        enum Kind { case user, assistant, action, changes, error }
+        enum Kind { case user, assistant, action, changes, proposal, example, error }
+        enum Resolution { case accepted, rejected, replaced }
         let id = UUID()
         var kind: Kind
         var text: String
@@ -34,6 +35,11 @@ final class AIChat {
         /// For `changes`: how many shapes a reply touched, and whether the user took it back.
         var count = 0
         var undone = false
+        /// For `proposal`: the changes the user can accept or reject, and what they chose.
+        var proposal: Proposal?
+        var resolution: Resolution?
+        /// For `example`: the shapes drawn in the chat.
+        var example: [Statement]?
     }
 
     enum Phase {
@@ -67,7 +73,7 @@ final class AIChat {
     static let historyTurns = 8
 
     func send(_ text: String, context: @escaping () -> ToolContext) {
-        send(display: text, prompt: text, context: context)
+        send(display: text, prompt: text, typed: true, context: context)
     }
 
     func requestFocus() {
@@ -116,10 +122,10 @@ final class AIChat {
                 : " Is there an endless loop? If so, fix it and tell me in one or two sentences what was wrong."
             display = String(localized: "The program doesn't stop: is there an endless loop?")
         }
-        send(display: display, prompt: prompt, context: context)
+        send(display: display, prompt: prompt, typed: false, context: context)
     }
 
-    private func send(display: String, prompt: String, context: @escaping () -> ToolContext) {
+    private func send(display: String, prompt: String, typed: Bool, context: @escaping () -> ToolContext) {
         let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isWorking else { return }
         entries.append(Entry(kind: .user, text: display))
@@ -133,7 +139,7 @@ final class AIChat {
                 workStarted = nil
             }
             do {
-                try await converse(context: context)
+                try await converse(context: context, asksForChange: typed && Self.asksForChange(text))
             } catch is CancellationError {
             } catch let error as URLError where error.code == .cancelled {
             } catch {
@@ -153,7 +159,8 @@ final class AIChat {
         lastFixedError = nil
     }
 
-    func clear() {
+    func clear(context: (() -> ToolContext)? = nil) {
+        if let editor = context?().editor { editor.proposal = nil }
         stop()
         entries = []
         history = []
@@ -194,18 +201,107 @@ final class AIChat {
         if !entries[index].undone { reveal(record.shapes, context: context) }
     }
 
+    /// The proposal waiting for the user's answer, if any.
+    var pendingProposal: Entry? {
+        entries.last { $0.kind == .proposal && $0.resolution == nil }
+    }
+
+    /// Makes the changes the assistant proposed in study mode, as one step the user can undo.
+    func accept(_ entry: Entry, context: () -> ToolContext) {
+        guard let proposal = entry.proposal, entry.resolution == nil,
+              let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        let live = context()
+        guard !live.locked else { return }
+        let original = live.program.wrappedValue
+        let (program, touched) = proposal.applied(to: original)
+        entries[index].resolution = .accepted
+        if live.editor.proposal?.id == proposal.id { live.editor.proposal = nil }
+        guard program != original else {
+            entries.append(Entry(kind: .error, text: String(localized: "Those shapes aren't in the flowchart anymore.")))
+            return
+        }
+        live.program.wrappedValue = program
+        let record = Entry(kind: .changes, text: "", count: touched.count)
+        changes[record.id] = (original, program, touched)
+        entries.insert(record, at: index + 1)
+        reveal(touched, context: context)
+    }
+
+    /// Brings a proposal back on the chart, in its function.
+    func showProposal(_ entry: Entry, context: () -> ToolContext) {
+        guard let proposal = entry.proposal, entry.resolution == nil else { return }
+        let live = context()
+        live.editor.proposal = proposal
+        if let function = proposal.function(in: proposal.preview(of: live.program.wrappedValue).program) {
+            live.editor.functionID = function
+        }
+    }
+
+    /// Drops a proposal: the chart stays as it is.
+    func reject(_ entry: Entry, context: () -> ToolContext) {
+        guard entry.resolution == nil, let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        entries[index].resolution = .rejected
+        let live = context()
+        if live.editor.proposal?.id == entry.proposal?.id { live.editor.proposal = nil }
+    }
+
+    /// Shows a new proposal on the chart. An older one still waiting is set aside: only one is drawn.
+    private func propose(_ changes: [Proposal.Change], context: () -> ToolContext) {
+        guard !changes.isEmpty else { return }
+        let live = context()
+        let proposal = Proposal(changes: changes)
+        let program = live.program.wrappedValue
+        for index in entries.indices where entries[index].kind == .proposal && entries[index].resolution == nil {
+            entries[index].resolution = .replaced
+        }
+        entries.append(Entry(kind: .proposal, text: Self.summary(of: proposal, in: program), proposal: proposal))
+        live.editor.proposal = proposal
+        if let function = proposal.function(in: proposal.preview(of: program).program) {
+            live.editor.functionID = function
+        }
+        live.editor.selection = nil
+    }
+
+    /// One line per change: the old shape and the new one.
+    static func summary(of proposal: Proposal, in program: Program) -> String {
+        func old(_ id: Statement.ID) -> Statement? { program.functions.lazy.compactMap { $0.body.statement(withID: id) }.first }
+        var lines: [String] = []
+        for change in proposal.changes {
+            switch change {
+            case .replace(let shape, _):
+                lines.append(old(shape.id).map { "\(ShapeText.label($0)) → \(ShapeText.label(shape))" } ?? "+ \(ShapeText.label(shape))")
+            case .insert(let shapes, _):
+                lines += shapes.map { "+ \(ShapeText.label($0))" }
+            case .delete(let id):
+                if let shape = old(id) { lines.append("− \(ShapeText.label(shape))") }
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+
     // MARK: Requests
 
-    private func converse(context: () -> ToolContext) async throws {
+    /// `asksForChange` when the user wrote a request to change the chart: in study mode the answer
+    /// should then be a proposal, and a model that only talks about it is reminded once.
+    private func converse(context: () -> ToolContext, asksForChange: Bool) async throws {
         let mode = AIMode.current
         if let lastMode, lastMode != mode { forgetToolCalls() }
         lastMode = mode
         phase = .thinking
+        // In study mode the changes stay on a copy until the user accepts them; every attempt builds
+        // on the previous one, as the chart does in auto mode.
+        var proposed: Program?
+        var proposedChanges: [Proposal.Change] = []
+        // Problems already in the chart before this message aren't the model's: every attempt is
+        // checked against these, so a mistake it leaves in place is reported again.
+        let baseline = Linter.problems(in: context().program.wrappedValue)
+        var lastFailed = false
+        var nudged = false
         for attempt in 0...Self.maxFixes {
             guard let key = OpenRouterAccount.shared.key else { throw OpenRouterError.notSignedIn }
             trimHistory()
             let system: JSON = ["role": "system",
-                                "content": .string(FlowchartTools.instructions(listing: tools.listing(context().program.wrappedValue), mode: mode))]
+                                "content": .string(FlowchartTools.instructions(listing: tools.listing(proposed ?? context().program.wrappedValue), mode: mode))]
             let reply = try await OpenRouterClient.complete(messages: [system] + history, tools: FlowchartTools.definitions(for: mode), key: key)
             try Task.checkCancellation()
 
@@ -220,33 +316,61 @@ final class AIChat {
             if !calls.isEmpty { kept["tool_calls"] = .array(calls) }
             history.append(.object(kept))
             if !content.isEmpty {
-                entries.append(Entry(kind: .assistant, text: content, model: OpenRouterClient.displayName(reply.model)))
+                let shown = tools.readable(Self.cleaned(content), in: proposed ?? context().program.wrappedValue)
+                if !shown.isEmpty {
+                    entries.append(Entry(kind: .assistant, text: shown, model: OpenRouterClient.displayName(reply.model)))
+                }
             }
-            if calls.isEmpty { return }
+            if calls.isEmpty {
+                // Weaker models describe the proposal instead of making it, so the user would read
+                // about changes that aren't on the chart; reminding them once usually gets the calls.
+                if mode == .study, proposedChanges.isEmpty, attempt < Self.maxFixes, !nudged,
+                   lastFailed || asksForChange || Self.describesProposal(content) {
+                    nudged = true
+                    history.append(["role": "user", "content": .string(Self.missingProposal)])
+                    continue
+                }
+                propose(proposedChanges, context: context)
+                return
+            }
 
             // The whole reply is applied to a copy and written back once, so a single Undo takes
             // back everything the assistant did in it.
             let live = context()
-            let original = live.program.wrappedValue
+            let original = proposed ?? live.program.wrappedValue
             let working = WorkingCopy(original)
-            let local = ToolContext(program: Binding(get: { working.program }, set: { working.program = $0 }),
-                                    editor: live.editor, locked: live.locked)
-            let before = Linter.problems(in: working.program)
+            let copy = Binding(get: { working.program }, set: { working.program = $0 })
+            // A proposal mustn't move the user's selection or function: it isn't on the chart yet.
+            let local = mode == .study ? ToolContext(program: copy, editor: EditorModel(), locked: false)
+                                       : ToolContext(program: copy, editor: live.editor, locked: live.locked)
+            let pointing = ToolContext(program: copy, editor: live.editor, locked: false)
+            let before = baseline
             var failed = false
             var results: [JSON] = []
             var touched: [Statement.ID] = []
+            var drew = false
+            var changesNow: [Proposal.Change] = []
             for call in calls {
                 let function = call["function"]
-                let outcome = tools.run(name: function?["name"]?.string ?? "",
-                                        arguments: function?["arguments"]?.string ?? "{}", context: local, mode: mode)
+                let name = function?["name"]?.string ?? ""
+                let outcome = tools.run(name: name, arguments: function?["arguments"]?.string ?? "{}",
+                                        context: name == "select_shape" ? pointing : local, mode: mode)
                 if let summary = outcome.summary {
                     entries.append(Entry(kind: .action, text: summary, targets: outcome.changed))
                 }
                 touched += outcome.changed
+                changesNow += outcome.proposed
+                if let example = outcome.example {
+                    entries.append(Entry(kind: .example, text: "", example: example))
+                    drew = true
+                }
                 if outcome.output.hasPrefix("Error") || outcome.output.contains("Fix these problems") { failed = true }
                 results.append(["role": "tool", "tool_call_id": call["id"] ?? "", "content": .string(outcome.output)])
             }
-            if working.program != original {
+            if mode == .study {
+                proposed = working.program
+                proposedChanges += changesNow
+            } else if working.program != original {
                 live.program.wrappedValue = working.program
                 var seen = Set<Statement.ID>()
                 let shapes = touched.filter { seen.insert($0).inserted }
@@ -261,24 +385,68 @@ final class AIChat {
                 failed = true
             }
             history += results
+            lastFailed = failed
 
             // A reply that only pointed at a shape, as models in study mode often do, still owes the
             // user its explanation: the next request gets it, now that the model has seen the result.
-            if !failed && content.isEmpty && working.program == original {
+            if !failed && content.isEmpty && !drew && changesNow.isEmpty && working.program == original {
                 if attempt < Self.maxFixes { continue }
                 throw OpenRouterError.emptyReply
             }
             // Everything worked: no second request, the reply already says what changed.
-            if !failed { return }
+            if !failed {
+                // A reply that only pointed at a shape when a change was asked for.
+                if mode == .study, proposedChanges.isEmpty, attempt < Self.maxFixes, !nudged,
+                   asksForChange || Self.describesProposal(content) {
+                    nudged = true
+                    history.append(["role": "user", "content": .string(Self.missingProposal)])
+                    continue
+                }
+                propose(proposedChanges, context: context)
+                return
+            }
             phase = .fixing
-            if live.locked {
+            if mode == .auto && live.locked {
                 entries.append(Entry(kind: .error, text: String(localized: "The program is running. Stop it to let the assistant change the flowchart.")))
                 return
             }
             if attempt == Self.maxFixes {
+                propose(proposedChanges, context: context)
                 entries.append(Entry(kind: .error, text: String(localized: "Some changes didn't come out right. Check the flowchart, or ask the assistant again.")))
             }
         }
+    }
+
+    /// Whether the user's message asks to change the chart, in Italian or English.
+    static func asksForChange(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        return ["rinomin", "cambi", "aggiung", "modific", "elimin", "togli", "cancell", "sostitu", "spost",
+                "inseris", "metti", "correggi", "rename", "change", "add ", "remove", "delete", "replace",
+                "insert", "move", "fix"].contains { lowered.contains($0) }
+    }
+
+    /// Whether a reply talks about a proposal, in Italian or English.
+    static func describesProposal(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        return ["propong", "propost", "propos", "accett", "accept"].contains { lowered.contains($0) }
+    }
+
+    static let missingProposal = """
+        (Message from the app, not the user.) No change reached the chart, so the user sees no proposal \
+        and no Accept button. If a change is needed, call insert_shapes, update_shape or delete_shapes \
+        now, with valid XML, for every shape it touches. Don't repeat your explanation.
+        """
+
+    /// A reply without the tool calls weaker models write out as text instead of making them, such
+    /// as `<!-- SELECT_SHAPE for s1 -->`, which mean nothing to the user.
+    static func cleaned(_ text: String) -> String {
+        var result = text
+        for pattern in [#"(?s)<!-+.*?-+>"#, #"(?s)<tool_call>.*?</tool_call>"#, #"(?s)<function=.*?</function>"#,
+                        #"(?im)^\s*\[?\s*(select_shape|insert_shapes|update_shape|delete_shapes|move_shape|show_example|suggest_changes|add_function|delete_function)\b.*$"#] {
+            if let regex = try? Regex(pattern) { result = result.replacing(regex, with: "") }
+        }
+        if let blank = try? Regex(#"\n{3,}"#) { result = result.replacing(blank, with: "\n\n") }
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Keeps the last few exchanges. It cuts only before a message of the user's, so every tool

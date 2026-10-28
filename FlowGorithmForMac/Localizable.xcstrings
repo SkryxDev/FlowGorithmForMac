@@ -201,6 +201,26 @@
         }
       }
     },
+    "Accept": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accetta"
+          }
+        }
+      }
+    },
+    "Accepted": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accettata"
+          }
+        }
+      }
+    },
     "Access to “%@” was blocked.": {
       "localizations": {
         "it": {
@@ -1247,6 +1267,16 @@
         }
       }
     },
+    "Example": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esempio"
+          }
+        }
+      }
+    },
     "Execution": {
       "localizations": {
         "it": {
@@ -1866,6 +1896,16 @@
         }
       }
     },
+    "Leave the chart as it is": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lascia il diagramma com'è"
+          }
+        }
+      }
+    },
     "Left": {
       "localizations": {
         "it": {
@@ -1922,6 +1962,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Main"
+          }
+        }
+      }
+    },
+    "Make these changes on the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fai queste modifiche nel diagramma"
           }
         }
       }
@@ -2141,6 +2191,16 @@
     },
     "On": {
       "shouldTranslate": false
+    },
+    "On the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nel diagramma"
+          }
+        }
+      }
     },
     "Only when a condition is true": {
       "localizations": {
@@ -2482,6 +2542,26 @@
         }
       }
     },
+    "Proposed by the assistant": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proposta dall'assistente"
+          }
+        }
+      }
+    },
+    "Proposed change": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifica proposta"
+          }
+        }
+      }
+    },
     "Pseudocode (English)": {
       "localizations": {
         "it": {
@@ -2612,6 +2692,26 @@
         }
       }
     },
+    "Reject": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rifiuta"
+          }
+        }
+      }
+    },
+    "Rejected": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rifiutata"
+          }
+        }
+      }
+    },
     "Remove All Breakpoints": {
       "localizations": {
         "it": {
@@ -2638,6 +2738,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ripete il corpo finché l'espressione è vera. Il controllo avviene prima di ogni giro."
+          }
+        }
+      }
+    },
+    "Replaced by a newer proposal": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostituita da una proposta più recente"
           }
         }
       }
@@ -2972,6 +3082,16 @@
         }
       }
     },
+    "Show the proposal on the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra la proposta nel diagramma"
+          }
+        }
+      }
+    },
     "Sign In with OpenRouter": {
       "localizations": {
         "it": {
@@ -3128,6 +3248,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ferma il programma e chiedi all'assistente perché non finisce"
+          }
+        }
+      }
+    },
+    "Stop the program to change the chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferma il programma per cambiare il diagramma"
           }
         }
       }
@@ -3608,6 +3738,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Questo blocco è vuoto: fai doppio clic per compilarlo."
+          }
+        }
+      }
+    },
+    "Those shapes aren't in the flowchart anymore.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quei blocchi non sono più nel diagramma."
           }
         }
       }

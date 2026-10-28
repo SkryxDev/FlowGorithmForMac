@@ -33,15 +33,19 @@ struct FlowchartView: View {
     var theme: Theme { Theme.named(themeID) }
     var scale: CGFloat { editor.zoom }
     var locked: Bool { session.state.isActive }
+    /// While a proposal is on the chart, its shapes are drawn but nothing can be edited, so what the
+    /// user accepts is exactly what they see.
+    var editingBlocked: Bool { locked || editor.proposal != nil }
 
     var body: some View {
-        let function = editor.currentFunction(in: program) ?? Function(name: "Main")
+        let preview = editor.proposal?.preview(of: program)
+        let function = editor.currentFunction(in: preview?.program ?? program) ?? Function(name: "Main")
         let metrics = ChartMetrics(fontSize: fontSize * scale, compact: compact)
         let layout = editor.layout(for: function, metrics: metrics)
 
         GeometryReader { geo in
             ScrollView([.horizontal, .vertical]) {
-                chart(layout, metrics: metrics, function: function)
+                chart(layout, metrics: metrics, function: function, preview: preview)
                     .frame(width: layout.size.width, height: layout.size.height)
                     .frame(minWidth: geo.size.width, minHeight: geo.size.height, alignment: .top)
                     .background {
@@ -80,13 +84,19 @@ struct FlowchartView: View {
             .onChange(of: editor.selection) { _, id in
                 reveal(id, in: layout, viewport: geo.size)
             }
+            .onChange(of: editor.proposal?.id) {
+                // Bring the first proposed shape into view.
+                guard let preview else { return }
+                let first = layout.nodes.first { node in node.statement.map { preview.fresh.contains($0.id) || preview.ghosts.contains($0.id) } ?? false }
+                reveal(first?.statement?.id, in: layout, viewport: geo.size)
+            }
         }
         .background(theme.canvas)
         .focusable()
         .focused($focused)
         .focusEffectDisabled()
         .onDeleteCommand {
-            guard !locked, let selection = editor.selection else { return }
+            guard !editingBlocked, let selection = editor.selection else { return }
             editor.delete(selection, in: $program)
         }
         .onExitCommand { editor.insertTarget = nil }
@@ -116,7 +126,7 @@ struct FlowchartView: View {
     /// system popover, and kept inside the visible area.
     @ViewBuilder
     func insertMenu(layout: ChartLayout, viewport: CGSize) -> some View {
-        if let target = editor.insertTarget, !locked,
+        if let target = editor.insertTarget, !editingBlocked,
            let insert = layout.inserts.first(where: { $0.point == target }) {
             let contentWidth = max(layout.size.width, viewport.width)
             let anchor = CGPoint(x: insert.position.x + (contentWidth - layout.size.width) / 2 - visibleRect.minX,
@@ -168,8 +178,12 @@ struct FlowchartView: View {
         withAnimation(.smooth(duration: 0.35)) { scrollPosition.scrollTo(point: CGPoint(x: x, y: y)) }
     }
 
-    func highlight(for node: ChartNode) -> NodeHighlight {
+    func highlight(for node: ChartNode, preview: Proposal.Preview?) -> NodeHighlight {
         guard let id = node.statement?.id else { return .none }
+        if let preview {
+            if preview.ghosts.contains(id) { return .ghost }
+            if preview.fresh.contains(id) { return .proposed }
+        }
         if session.state == .failed, session.error?.statementID == id { return .error }
         if session.state.isActive, session.currentStatement == id { return .executing }
         if editor.flashing.contains(id) { return .changed }
@@ -177,14 +191,19 @@ struct FlowchartView: View {
         return .none
     }
 
-    func chart(_ layout: ChartLayout, metrics: ChartMetrics, function: Function) -> some View {
+    func chart(_ layout: ChartLayout, metrics: ChartMetrics, function: Function, preview: Proposal.Preview?) -> some View {
         ZStack(alignment: .topLeading) {
             ChartLines(layout: layout, theme: theme, fontSize: metrics.fontSize, scale: scale)
                 .equatable()
 
             ForEach(layout.nodes) { node in
-                ShapeView(node: node, theme: theme, fontSize: metrics.fontSize, scale: scale, highlight: highlight(for: node))
+                let highlight = highlight(for: node, preview: preview)
+                ShapeView(node: node, theme: theme, fontSize: metrics.fontSize, scale: scale, highlight: highlight)
                     .equatable()
+                    // The old version of a proposed change: faded, almost white, out of the way.
+                    .opacity(highlight == .ghost ? 0.32 : 1)
+                    .saturation(highlight == .ghost ? 0 : 1)
+                    .allowsHitTesting(highlight != .ghost && highlight != .proposed)
                     // Every modifier goes before .position: after it, the view fills the whole chart,
                     // and a drop zone or menu would cover everything.
                     .onTapGesture(count: 2) { open(node, function: function) }
@@ -195,7 +214,7 @@ struct FlowchartView: View {
                     })
                     .contextMenu { contextMenu(for: node, function: function) }
                     .onDrag {
-                        guard let id = node.statement?.id, !locked else { return NSItemProvider() }
+                        guard let id = node.statement?.id, !editingBlocked else { return NSItemProvider() }
                         dragging = true
                         return NSItemProvider(object: "\(Self.dragPrefix)\(id.uuidString)" as NSString)
                     }
@@ -203,7 +222,7 @@ struct FlowchartView: View {
                     .position(x: node.frame.midX, y: node.frame.midY)
             }
 
-            if !locked {
+            if !editingBlocked {
                 ForEach(layout.inserts) { insert in
                     InsertButton(theme: theme, scale: scale, targeted: dropTarget == insert.id,
                                  presented: editor.insertTarget == insert.point) {
@@ -224,7 +243,7 @@ struct FlowchartView: View {
     }
 
     func open(_ node: ChartNode, function: Function) {
-        guard !locked else { return }
+        guard !editingBlocked else { return }
         switch node.role {
         case .statement:
             if let statement = node.statement, statement.template != nil {
@@ -243,7 +262,7 @@ struct FlowchartView: View {
     func contextMenu(for node: ChartNode, function: Function) -> some View {
         if let statement = node.statement {
             Button("Edit…", systemImage: "pencil") { editor.editingStatement = statement }
-                .disabled(locked || statement.template == nil)
+                .disabled(editingBlocked || statement.template == nil)
             if let aiActions, aiActions.isAvailable {
                 Divider()
                 Button("Explain with AI", systemImage: "sparkles") {
@@ -256,22 +275,22 @@ struct FlowchartView: View {
                 }
             }
             Divider()
-            Button("Cut", systemImage: "scissors") { editor.cut(statement.id, in: $program) }.disabled(locked)
+            Button("Cut", systemImage: "scissors") { editor.cut(statement.id, in: $program) }.disabled(editingBlocked)
             Button("Copy", systemImage: "doc.on.doc") { editor.copy(statement.id, in: program) }
             Button("Paste After", systemImage: "doc.on.clipboard") {
                 editor.selection = statement.id
                 editor.paste(in: $program)
             }
             // Not tied to canPaste: the menu is built before the user copies, so it would be stale.
-            .disabled(locked)
-            Button("Duplicate", systemImage: "plus.square.on.square") { editor.duplicate(statement.id, in: $program) }.disabled(locked)
+            .disabled(editingBlocked)
+            Button("Duplicate", systemImage: "plus.square.on.square") { editor.duplicate(statement.id, in: $program) }.disabled(editingBlocked)
             Divider()
-            Button("Delete", systemImage: "trash", role: .destructive) { editor.delete(statement.id, in: $program) }.disabled(locked)
+            Button("Delete", systemImage: "trash", role: .destructive) { editor.delete(statement.id, in: $program) }.disabled(editingBlocked)
         } else if function.isMain {
             Button("Program Info…", systemImage: "info.circle") { editor.showsProgramInfo = true }
         } else {
             Button("Edit Function…", systemImage: "function") { editor.editingFunction = function }
-                .disabled(locked)
+                .disabled(editingBlocked)
         }
     }
 

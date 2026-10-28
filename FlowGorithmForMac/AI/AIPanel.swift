@@ -145,11 +145,11 @@ struct AIPanel: View {
             Spacer()
             UsageIndicator(account: account)
             Menu {
-                Button("New Conversation", systemImage: "square.and.pencil") { chat.clear() }
+                Button("New Conversation", systemImage: "square.and.pencil") { chat.clear(context: context) }
                 Link("OpenRouter Account…", destination: OpenRouterAccount.settingsURL)
                 Divider()
                 Button("Sign Out", systemImage: "rectangle.portrait.and.arrow.right") {
-                    chat.clear()
+                    chat.clear(context: context)
                     account.signOut()
                 }
             } label: {
@@ -251,6 +251,15 @@ struct AIPanel: View {
             .help(entry.targets.isEmpty ? "" : String(localized: "Show on the chart"))
         case .changes:
             changesRow(entry)
+        case .proposal:
+            ProposalCard(entry: entry, canAccept: !context().locked,
+                         accept: { chat.accept(entry, context: context) },
+                         reject: { chat.reject(entry, context: context) },
+                         show: { chat.showProposal(entry, context: context) })
+        case .example:
+            if let shapes = entry.example {
+                ExampleCard(shapes: shapes)
+            }
         case .error:
             Label(entry.text, systemImage: "exclamationmark.triangle.fill")
                 .font(.callout)

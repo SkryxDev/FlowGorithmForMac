@@ -45,6 +45,9 @@ final class EditorModel {
     var bottomPanel: PanelTab = .variables
     var showsBottomPanel = true
     var lastError: String?
+    /// Changes the assistant proposes in study mode, drawn on the chart until the user accepts or
+    /// rejects them. The chart can't be edited meanwhile, so what it shows stays what gets applied.
+    var proposal: Proposal?
     /// Shapes the assistant just changed, highlighted for a moment.
     private(set) var flashing: Set<Statement.ID> = []
     @ObservationIgnored private var flashTask: Task<Void, Never>?

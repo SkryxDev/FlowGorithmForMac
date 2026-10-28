@@ -83,7 +83,7 @@ saves the chart as an image.
 
 ## Install
 
-1. Download **FlowGorithmForMac-1.1.1-beta.dmg** from the
+1. Download **FlowGorithmForMac-1.0.0.dmg** from the
    [latest release](https://github.com/SkryxDev/FlowGorithmForMac/releases/latest).
 2. Open it and drag **FlowGorithmForMac** into **Applications**.
 3. The app is not notarized yet, so macOS blocks it the first time. Open it once, then go to
@@ -104,7 +104,10 @@ The assistant lives in the column on the left (the sidebar button shows or hides
 A switch at its top picks how it helps:
 
 - **Study Mode** (switch to the left, teal) — for learning. The assistant explains, points at the shape to
-  look at and gives one hint at a time, but never changes the chart and never writes the solution.
+  look at and gives one hint at a time instead of the solution. When you ask for a specific change, such as
+  renaming a variable, it *proposes* it right on the chart: the old shapes fade out and the new ones blink
+  below them, and nothing changes until you press **Accept** (in the chat or over the chart) — **Reject**
+  leaves the chart as it was. It can also draw a small example flowchart in the chat.
 - **Auto Mode** (switch to the right) — the assistant adds, edits, moves and deletes shapes for you.
 
 - **Sign in once** with **Sign In with OpenRouter**: the browser opens, you log in to
@@ -180,7 +183,7 @@ cd FlowCore && swift test
 To build the drag-to-install disk image used for releases:
 
 ```bash
-Scripts/make-dmg.sh 1.1.1-beta
+Scripts/make-dmg.sh 1.0.0
 ```
 
 The image is written to `dist/FlowGorithmForMac-<version>.dmg` and its SHA-256 is printed. The app is signed
