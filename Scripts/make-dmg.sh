@@ -51,12 +51,6 @@ ATTACHED="$(hdiutil attach -readwrite -noverify -noautoopen "$WORK/rw.dmg")"
 DEVICE="$(echo "$ATTACHED" | awk '/Apple_HFS/ {print $1}')"
 VOLUME="$(echo "$ATTACHED" | awk -F '\t' '/Apple_HFS/ {print $NF}')"
 [ -n "$DEVICE" ] || { echo "Couldn't mount the image"; exit 1; }
-# The disk shows the app's icon in Finder and on the desktop.
-if [ -f "$APP/Contents/Resources/AppIcon.icns" ] && [ -d "$VOLUME" ]; then
-    cp "$APP/Contents/Resources/AppIcon.icns" "$VOLUME/.VolumeIcon.icns"
-    SetFile -c icnC "$VOLUME/.VolumeIcon.icns" || true
-    SetFile -a C "$VOLUME" || true
-fi
 
 # A 640×400 window: the app at the left of the background's arrow, Applications at its right.
 osascript <<EOF || echo "Finder layout skipped"
@@ -80,7 +74,7 @@ tell application "Finder"
         set position of item "$NAME.app" of container window to {160, 200}
         set position of item "Applications" of container window to {480, 200}
         -- Hidden files show when Finder is set to show them: they go outside the window.
-        repeat with hiddenName in {".background", ".fseventsd", ".VolumeIcon.icns", ".DS_Store", ".Trashes"}
+        repeat with hiddenName in {".background", ".fseventsd", ".DS_Store", ".Trashes"}
             if exists item hiddenName of container window then
                 set position of item hiddenName of container window to {900, 900}
             end if
@@ -91,6 +85,14 @@ tell application "Finder"
     end tell
 end tell
 EOF
+
+# The disk shows the app's icon in Finder and on the desktop. Copied after the layout, and
+# left where it is: Finder deletes the file whenever it opens the window with it inside.
+if [ -f "$APP/Contents/Resources/AppIcon.icns" ] && [ -d "$VOLUME" ]; then
+    cp "$APP/Contents/Resources/AppIcon.icns" "$VOLUME/.VolumeIcon.icns"
+    SetFile -c icnC -a V "$VOLUME/.VolumeIcon.icns" || true
+    SetFile -a C "$VOLUME" || true
+fi
 
 sync
 hdiutil detach -quiet "$DEVICE"
