@@ -167,12 +167,11 @@ final class FlowchartTools {
 
     // MARK: Definitions
 
-    /// The tools for a mode. In study mode the changes become proposals the user accepts or rejects,
-    /// and the assistant can draw examples in the chat; it can't move shapes or add functions.
-    static func definitions(for mode: AIMode) -> [JSON] {
-        guard mode == .study else { return definitions }
-        let proposable: Set<String> = ["insert_shapes", "update_shape", "delete_shapes", "select_shape"]
-        return definitions.filter { proposable.contains($0["function"]?["name"]?.string ?? "") } + studyDefinitions
+    /// The tools, the same in both modes so a conversation can switch mode without rewriting what
+    /// the model did before. In study mode changes become proposals the user accepts or rejects,
+    /// and moving shapes or adding functions is refused.
+    static var allDefinitions: [JSON] {
+        definitions + studyDefinitions
     }
 
     static var studyDefinitions: [JSON] {
@@ -491,7 +490,14 @@ final class FlowchartTools {
                 case open: out += open == "\"" ? "&quot;" : "&apos;"
                 case "<": out += "&lt;"
                 case ">": out += "&gt;"
-                case "&": out += Self.startsEntity(text[index...]) ? "&" : "&amp;"
+                case "&":
+                    // An HTML entity such as &egrave; isn't XML: it becomes its letter.
+                    if let (letter, length) = Self.htmlEntity(text[index...]) {
+                        out += letter
+                        index = text.index(index, offsetBy: length)
+                        continue
+                    }
+                    out += Self.startsEntity(text[index...]) ? "&" : "&amp;"
                 default: out.append(character)
                 }
             } else if inTag {
@@ -551,6 +557,33 @@ final class FlowchartTools {
         guard end > next else { return false }
         while end < text.endIndex, text[end].isWhitespace { end = text.index(after: end) }
         return end < text.endIndex && text[end] == "="
+    }
+
+    /// HTML's named characters models write for accented letters and symbols, which XML doesn't
+    /// know: `&egrave;` would otherwise stay in the shape as those eight characters.
+    static let htmlEntities: [String: String] = {
+        var table = ["nbsp": " ", "euro": "€", "deg": "°", "laquo": "«", "raquo": "»", "hellip": "…", "ndash": "–",
+                     "mdash": "—", "lsquo": "‘", "rsquo": "’", "ldquo": "“", "rdquo": "”", "times": "×",
+                     "divide": "÷", "middot": "·", "sup2": "²", "sup3": "³", "copy": "©", "reg": "®",
+                     "iexcl": "¡", "iquest": "¿", "szlig": "ß", "aelig": "æ", "AElig": "Æ", "ccedil": "ç",
+                     "Ccedil": "Ç", "ntilde": "ñ", "Ntilde": "Ñ", "oslash": "ø", "Oslash": "Ø", "aring": "å",
+                     "Aring": "Å", "le": "≤", "ge": "≥", "ne": "≠", "minus": "−", "plusmn": "±"]
+        let accents = ["grave": "\u{300}", "acute": "\u{301}", "circ": "\u{302}", "tilde": "\u{303}", "uml": "\u{308}"]
+        for base in ["a", "e", "i", "o", "u", "y", "A", "E", "I", "O", "U", "Y"] {
+            for (name, mark) in accents {
+                let letter = (base + mark).precomposedStringWithCanonicalMapping
+                if letter.count == 1, letter.unicodeScalars.count == 1 { table[base + name] = letter }
+            }
+        }
+        return table
+    }()
+
+    /// The letter for an HTML entity at the start of the text, and the entity's length.
+    static func htmlEntity(_ text: Substring) -> (String, Int)? {
+        guard let semicolon = text.prefix(10).firstIndex(of: ";") else { return nil }
+        let name = String(text[text.index(after: text.startIndex)..<semicolon])
+        guard let letter = htmlEntities[name] else { return nil }
+        return (letter, name.count + 2)
     }
 
     private static func startsEntity(_ text: Substring) -> Bool {

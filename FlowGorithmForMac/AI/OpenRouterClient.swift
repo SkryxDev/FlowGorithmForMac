@@ -9,21 +9,28 @@ enum OpenRouterClient {
     static let modelsURL = URL(string: "https://openrouter.ai/api/v1/models")!
 
     /// The free models to try, in order: OpenRouter moves on to the next one when a model is busy
-    /// or gone. `openrouter/free` picks any free model that's up, so something always answers.
-    static let preferred = ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-ultra-550b-a55b:free", "openrouter/free"]
+    /// or gone. Only models good enough to edit a chart: OpenRouter's router of any free model
+    /// also picks tiny ones, which scatter shapes around, so it isn't used.
+    static let preferred = ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-ultra-550b-a55b:free",
+                            "nvidia/nemotron-3.5-super-vl:free"]
+    /// Asked when all the preferred models are busy.
+    static let backup = ["google/gemma-4-26b-a4b-it:free", "thinkingmachines/inkling:free"]
 
     /// Display names for the models that answered, shown under each reply.
     static func displayName(_ id: String) -> String {
         if id.hasPrefix("google/gemma-4-31b") { return "Gemma 4 31B" }
         if id.hasPrefix("nvidia/nemotron-3-ultra") { return "Nemotron 3 Ultra" }
+        if id.hasPrefix("nvidia/nemotron-3.5-super") { return "Nemotron 3.5 Super" }
+        if id.hasPrefix("google/gemma-4-26b") { return "Gemma 4 26B" }
+        if id.hasPrefix("thinkingmachines/inkling") { return "Inkling" }
         return id.split(separator: "/").last.map { String($0).replacingOccurrences(of: ":free", with: "") } ?? id
     }
 
-    /// The preferred models still listed as free and able to use tools. The free roster changes
-    /// often, so the list is checked once per launch; the router stays as the last resort.
-    static func availableModels() async -> [String] {
-        if let cached { return cached }
-        var models = ["openrouter/free"]
+    /// The preferred and backup models still listed as free and able to use tools. The free roster
+    /// changes often, so the list is checked once per launch; without the catalog, all are tried.
+    static func availableModels() async -> (preferred: [String], backup: [String]) {
+        if let cached { return (cached.filter(preferred.contains), cached.filter(backup.contains)) }
+        var models = preferred + backup
         if let (data, _) = try? await URLSession.shared.data(from: modelsURL),
            let list = JSON.parse(data)?["data"]?.array {
             let usable = Set(list.compactMap { model -> String? in
@@ -32,10 +39,12 @@ enum OpenRouterClient {
                       model["supported_parameters"]?.array?.contains(.string("tools")) == true else { return nil }
                 return id
             })
-            models = preferred.filter { usable.contains($0) || $0 == "openrouter/free" }
+            let listed = models.filter(usable.contains)
+            // If none of them is listed anymore, they're still tried rather than nothing.
+            if !listed.isEmpty { models = listed }
         }
         cached = models
-        return models
+        return (models.filter(preferred.contains), models.filter(backup.contains))
     }
 
     private static var cached: [String]?
@@ -54,9 +63,18 @@ enum OpenRouterClient {
         var model: String
     }
 
-    /// One request. Errors carry what the user can do about them.
+    /// One request, to the preferred models and, when they're all busy, to the backups. Errors
+    /// carry what the user can do about them.
     static func complete(messages: [JSON], tools: [JSON], key: String) async throws -> Reply {
-        let models = await availableModels()
+        let (first, second) = await availableModels()
+        do {
+            return try await complete(messages: messages, tools: tools, key: key, models: first.isEmpty ? second : first)
+        } catch OpenRouterError.busy where !first.isEmpty && !second.isEmpty {
+            return try await complete(messages: messages, tools: tools, key: key, models: second)
+        }
+    }
+
+    private static func complete(messages: [JSON], tools: [JSON], key: String, models: [String]) async throws -> Reply {
         var request = URLRequest(url: chatURL)
         request.httpMethod = "POST"
         request.timeoutInterval = 180

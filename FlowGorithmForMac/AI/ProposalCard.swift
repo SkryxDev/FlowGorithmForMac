@@ -91,9 +91,15 @@ struct ProposalCard: View {
     }
 }
 
-/// A small example flowchart the assistant drew in the chat.
+/// A small example flowchart the assistant drew in the chat, with a button that puts it on the
+/// chart.
 struct ExampleCard: View {
     let shapes: [Statement]
+    var used: Bool
+    /// Whether the function on screen has shapes, which the example then replaces.
+    var replaces: Bool
+    var canUse: Bool
+    var use: () -> Void
 
     @AppStorage(SettingsKey.theme) private var themeID = Theme.classic.id
 
@@ -104,6 +110,21 @@ struct ExampleCard: View {
                 .foregroundStyle(AIMode.study.color)
             MiniChart(shapes: shapes, theme: Theme.named(themeID))
                 .frame(maxWidth: .infinity)
+            if used {
+                Label("On the chart", systemImage: "checkmark.circle.fill")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            } else {
+                Button(action: use) {
+                    Label(replaces ? "Replace the Chart with This Example" : "Put This Example on the Chart",
+                          systemImage: "square.and.arrow.down.on.square")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glass)
+                .controlSize(.small)
+                .disabled(!canUse)
+                .help(replaces ? "The shapes of the function on screen are replaced; you can undo it" : "Adds these shapes to the function on screen")
+            }
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)

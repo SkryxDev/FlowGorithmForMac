@@ -137,6 +137,9 @@ struct DocumentView: View {
             fileAlertMessage(request)
         }
         .onAppear {
+            #if DEBUG
+            if UserDefaults.standard.bool(forKey: "ScreenshotDemo") { chat.loadScreenshotDemo(context: toolContext) }
+            #endif
             session.speed = savedSpeed
             session.ignoreBreakpoints = savedIgnoreBreakpoints
             editor.showsInspector = savedShowsInspector

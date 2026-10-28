@@ -64,8 +64,6 @@ final class AIChat {
     @ObservationIgnored private let tools = FlowchartTools()
     /// The chart before and after each reply that changed it, for its Undo button.
     @ObservationIgnored private var changes: [Entry.ID: (before: Program, after: Program, shapes: [Statement.ID])] = [:]
-    /// The mode of the last request: the history is rewritten when it changes.
-    @ObservationIgnored private var lastMode: AIMode?
 
     /// The first request plus at most this many to fix failed changes.
     static let maxFixes = 2
@@ -75,6 +73,13 @@ final class AIChat {
     func send(_ text: String, context: @escaping () -> ToolContext) {
         send(display: text, prompt: text, typed: true, context: context)
     }
+
+    #if DEBUG
+    /// Adds an entry without asking the model, for the screenshot demo.
+    func demo(_ entry: Entry) {
+        entries.append(entry)
+    }
+    #endif
 
     func requestFocus() {
         focusRequest += 1
@@ -166,7 +171,6 @@ final class AIChat {
         history = []
         changes = [:]
         lastFixedError = nil
-        lastMode = nil
         tools.reset()
     }
 
@@ -199,6 +203,45 @@ final class AIChat {
         live.program.wrappedValue = entry.undone ? record.after : record.before
         entries[index].undone.toggle()
         if !entries[index].undone { reveal(record.shapes, context: context) }
+    }
+
+    /// Puts back the chart as it was before a message whose changes still have mistakes after every
+    /// attempt, so a weak reply never leaves the user's chart broken. The changes stay in the chat,
+    /// undone, and Redo shows them anyway.
+    private func revert(to start: Program, since firstEntry: Int, context: () -> ToolContext) {
+        let live = context()
+        let made = live.program.wrappedValue
+        let touched = entries[firstEntry...].filter { $0.kind == .action }.flatMap(\.targets)
+        let kept = entries[firstEntry...].filter { $0.kind != .action && $0.kind != .changes }
+        entries.replaceSubrange(firstEntry..., with: kept)
+        live.program.wrappedValue = start
+        var record = Entry(kind: .changes, text: "", count: Set(touched).count)
+        record.undone = true
+        changes[record.id] = (start, made, touched)
+        entries.append(record)
+        entries.append(Entry(kind: .error, text: String(localized: "The assistant's changes still had mistakes, so the chart is back as it was. Redo shows them anyway, or ask again.")))
+    }
+
+    /// Puts an example from the chat on the chart: in the function on screen, in place of its
+    /// shapes when it has some. One step the user can undo.
+    func useExample(_ entry: Entry, context: () -> ToolContext) {
+        guard let shapes = entry.example, entry.resolution == nil,
+              let index = entries.firstIndex(where: { $0.id == entry.id }) else { return }
+        let live = context()
+        guard !live.locked, live.editor.proposal == nil else { return }
+        let original = live.program.wrappedValue
+        var program = original
+        guard let function = live.editor.currentFunction(in: program),
+              let functionIndex = program.functions.firstIndex(where: { $0.id == function.id }) else { return }
+        let copies = shapes.map { $0.withNewIDs() }
+        program.functions[functionIndex].body = copies
+        live.program.wrappedValue = program
+        entries[index].resolution = .accepted
+        let ids = copies.flatMap { [$0] + $0.blocks.flatMap(\.flattened) }.map(\.id)
+        let record = Entry(kind: .changes, text: "", count: ids.count)
+        changes[record.id] = (original, program, ids)
+        entries.insert(record, at: index + 1)
+        reveal(ids, context: context)
     }
 
     /// The proposal waiting for the user's answer, if any.
@@ -285,8 +328,6 @@ final class AIChat {
     /// should then be a proposal, and a model that only talks about it is reminded once.
     private func converse(context: () -> ToolContext, asksForChange: Bool) async throws {
         let mode = AIMode.current
-        if let lastMode, lastMode != mode { forgetToolCalls() }
-        lastMode = mode
         phase = .thinking
         // In study mode the changes stay on a copy until the user accepts them; every attempt builds
         // on the previous one, as the chart does in auto mode.
@@ -295,6 +336,9 @@ final class AIChat {
         // Problems already in the chart before this message aren't the model's: every attempt is
         // checked against these, so a mistake it leaves in place is reported again.
         let baseline = Linter.problems(in: context().program.wrappedValue)
+        // In auto mode the chart before this message, to put it back if the changes stay wrong.
+        let start = context().program.wrappedValue
+        let firstEntry = entries.count
         var lastFailed = false
         var nudged = false
         for attempt in 0...Self.maxFixes {
@@ -302,12 +346,14 @@ final class AIChat {
             trimHistory()
             let system: JSON = ["role": "system",
                                 "content": .string(FlowchartTools.instructions(listing: tools.listing(proposed ?? context().program.wrappedValue), mode: mode))]
-            let reply = try await OpenRouterClient.complete(messages: [system] + history, tools: FlowchartTools.definitions(for: mode), key: key)
+            let reply = try await OpenRouterClient.complete(messages: [system] + history, tools: FlowchartTools.allDefinitions, key: key)
             try Task.checkCancellation()
 
             let content = Self.text(of: reply.message["content"])
             let calls = Self.normalized(reply.message["tool_calls"]?.array ?? [])
-            if content.isEmpty && calls.isEmpty {
+            let shown = tools.readable(Self.cleaned(content), in: proposed ?? context().program.wrappedValue)
+            // A reply that's empty, or only tool calls written out as text, says nothing to the user.
+            if shown.isEmpty && calls.isEmpty && !Self.writesShapes(content) {
                 // Free models sometimes come back empty-handed; asking again usually works.
                 if attempt < Self.maxFixes { continue }
                 throw OpenRouterError.emptyReply
@@ -315,17 +361,14 @@ final class AIChat {
             var kept: [String: JSON] = ["role": "assistant", "content": .string(content)]
             if !calls.isEmpty { kept["tool_calls"] = .array(calls) }
             history.append(.object(kept))
-            if !content.isEmpty {
-                let shown = tools.readable(Self.cleaned(content), in: proposed ?? context().program.wrappedValue)
-                if !shown.isEmpty {
-                    entries.append(Entry(kind: .assistant, text: shown, model: OpenRouterClient.displayName(reply.model)))
-                }
+            if !shown.isEmpty {
+                entries.append(Entry(kind: .assistant, text: shown, model: OpenRouterClient.displayName(reply.model)))
             }
             if calls.isEmpty {
                 // Weaker models describe the proposal instead of making it, so the user would read
                 // about changes that aren't on the chart; reminding them once usually gets the calls.
-                if mode == .study, proposedChanges.isEmpty, attempt < Self.maxFixes, !nudged,
-                   lastFailed || asksForChange || Self.describesProposal(content) {
+                if proposedChanges.isEmpty, attempt < Self.maxFixes, !nudged,
+                   lastFailed || asksForChange || Self.describesProposal(content) || Self.writesShapes(content) {
                     nudged = true
                     history.append(["role": "user", "content": .string(Self.missingProposal)])
                     continue
@@ -396,8 +439,8 @@ final class AIChat {
             // Everything worked: no second request, the reply already says what changed.
             if !failed {
                 // A reply that only pointed at a shape when a change was asked for.
-                if mode == .study, proposedChanges.isEmpty, attempt < Self.maxFixes, !nudged,
-                   asksForChange || Self.describesProposal(content) {
+                if proposedChanges.isEmpty, changesNow.isEmpty, !drew, working.program == original,
+                   attempt < Self.maxFixes, !nudged, asksForChange || Self.describesProposal(content) {
                     nudged = true
                     history.append(["role": "user", "content": .string(Self.missingProposal)])
                     continue
@@ -411,6 +454,10 @@ final class AIChat {
                 return
             }
             if attempt == Self.maxFixes {
+                if mode == .auto, live.program.wrappedValue != start {
+                    revert(to: start, since: firstEntry, context: context)
+                    return
+                }
                 propose(proposedChanges, context: context)
                 entries.append(Entry(kind: .error, text: String(localized: "Some changes didn't come out right. Check the flowchart, or ask the assistant again.")))
             }
@@ -421,8 +468,13 @@ final class AIChat {
     static func asksForChange(_ text: String) -> Bool {
         let lowered = text.lowercased()
         return ["rinomin", "cambi", "aggiung", "modific", "elimin", "togli", "cancell", "sostitu", "spost",
-                "inseris", "metti", "correggi", "rename", "change", "add ", "remove", "delete", "replace",
-                "insert", "move", "fix"].contains { lowered.contains($0) }
+                "inseris", "metti", "correggi", "implement", "crea ", "costruisc", "rename", "change", "add ",
+                "remove", "delete", "replace", "insert", "move", "fix", "build", "create"].contains { lowered.contains($0) }
+    }
+
+    /// Whether a reply writes shapes out as XML instead of calling the tools.
+    static func writesShapes(_ text: String) -> Bool {
+        text.contains(/<(declare|assign|input|output|if|while|for|do|call|comment)\b/)
     }
 
     /// Whether a reply talks about a proposal, in Italian or English.
@@ -432,9 +484,9 @@ final class AIChat {
     }
 
     static let missingProposal = """
-        (Message from the app, not the user.) No change reached the chart, so the user sees no proposal \
-        and no Accept button. If a change is needed, call insert_shapes, update_shape or delete_shapes \
-        now, with valid XML, for every shape it touches. Don't repeat your explanation.
+        (Message from the app, not the user.) Nothing reached the chart: shapes written in a reply are \
+        just text the user can't use. If a change is needed, call insert_shapes, update_shape or \
+        delete_shapes now, with valid XML, for every shape it touches. Don't repeat your explanation.
         """
 
     /// A reply without the tool calls weaker models write out as text instead of making them, such
@@ -442,7 +494,11 @@ final class AIChat {
     static func cleaned(_ text: String) -> String {
         var result = text
         for pattern in [#"(?s)<!-+.*?-+>"#, #"(?s)<tool_call>.*?</tool_call>"#, #"(?s)<function=.*?</function>"#,
-                        #"(?im)^\s*\[?\s*(select_shape|insert_shapes|update_shape|delete_shapes|move_shape|show_example|suggest_changes|add_function|delete_function)\b.*$"#] {
+                        #"(?im)^\s*\[?\s*(select_shape|insert_shapes|update_shape|delete_shapes|move_shape|show_example|suggest_changes|add_function|delete_function)\b.*$"#,
+                        // Shapes written out as XML: the user can't do anything with them.
+                        #"(?s)```xml.*?```"#,
+                        #"</?(declare|assign|input|output|if|then|else|while|for|do|call|comment|breakpoint|open|close|read|write|body|function)\b[^>]*>"#,
+                        #"\(I changed the flowchart\.\)"#] {
             if let regex = try? Regex(pattern) { result = result.replacing(regex, with: "") }
         }
         if let blank = try? Regex(#"\n{3,}"#) { result = result.replacing(blank, with: "\n\n") }
@@ -455,23 +511,6 @@ final class AIChat {
         let starts = history.indices.filter { history[$0]["role"]?.string == "user" }
         guard starts.count > Self.historyTurns else { return }
         history.removeFirst(starts[starts.count - Self.historyTurns])
-    }
-
-    /// Turns past tool calls into plain replies. The two modes offer different tools, and some
-    /// providers refuse a conversation that calls a tool the request doesn't define.
-    private func forgetToolCalls() {
-        history = history.compactMap { message in
-            switch message["role"]?.string {
-            case "tool":
-                return nil
-            case "assistant":
-                guard message["tool_calls"] != nil else { return message }
-                let content = message["content"]?.string ?? ""
-                return ["role": "assistant", "content": .string(content.isEmpty ? "(I changed the flowchart.)" : content)]
-            default:
-                return message
-            }
-        }
     }
 
     /// The text of a reply, which some providers send as a list of parts.

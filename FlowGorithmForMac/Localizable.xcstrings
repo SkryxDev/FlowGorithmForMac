@@ -321,6 +321,16 @@
         }
       }
     },
+    "Adds these shapes to the function on screen": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunge questi blocchi alla funzione sullo schermo"
+          }
+        }
+      }
+    },
     "Allow": {
       "localizations": {
         "it": {
@@ -2592,6 +2602,16 @@
         }
       }
     },
+    "Put This Example on the Chart": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metti questo esempio nel diagramma"
+          }
+        }
+      }
+    },
     "Put the assistant's changes back": {
       "localizations": {
         "it": {
@@ -2738,6 +2758,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ripete il corpo finché l'espressione è vera. Il controllo avviene prima di ogni giro."
+          }
+        }
+      }
+    },
+    "Replace the Chart with This Example": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sostituisci il diagramma con questo esempio"
           }
         }
       }
@@ -3392,6 +3422,16 @@
         }
       }
     },
+    "The assistant's changes still had mistakes, so the chart is back as it was. Redo shows them anyway, or ask again.": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le modifiche dell'assistente avevano ancora errori, quindi il diagramma è tornato com'era. Con Ripeti le vedi comunque, oppure chiedi di nuovo."
+          }
+        }
+      }
+    },
     "The assistant's version has a mistake too. Try changing it yourself.": {
       "localizations": {
         "it": {
@@ -3628,6 +3668,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Il risultato non è quello che ti aspettavi?"
+          }
+        }
+      }
+    },
+    "The shapes of the function on screen are replaced; you can undo it": {
+      "localizations": {
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I blocchi della funzione sullo schermo vengono sostituiti; puoi annullare"
           }
         }
       }

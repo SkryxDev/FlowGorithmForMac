@@ -258,7 +258,11 @@ struct AIPanel: View {
                          show: { chat.showProposal(entry, context: context) })
         case .example:
             if let shapes = entry.example {
-                ExampleCard(shapes: shapes)
+                let live = context()
+                ExampleCard(shapes: shapes, used: entry.resolution != nil,
+                            replaces: live.editor.currentFunction(in: live.program.wrappedValue)?.body.isEmpty == false,
+                            canUse: !live.locked && live.editor.proposal == nil,
+                            use: { chat.useExample(entry, context: context) })
             }
         case .error:
             Label(entry.text, systemImage: "exclamationmark.triangle.fill")

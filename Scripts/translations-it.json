@@ -443,5 +443,10 @@
   "Accept": "Accetta",
   "Reject": "Rifiuta",
   "Accepted": "Accettata",
-  "Rejected": "Rifiutata"
+  "Rejected": "Rifiutata",
+  "Adds these shapes to the function on screen": "Aggiunge questi blocchi alla funzione sullo schermo",
+  "Put This Example on the Chart": "Metti questo esempio nel diagramma",
+  "Replace the Chart with This Example": "Sostituisci il diagramma con questo esempio",
+  "The assistant's changes still had mistakes, so the chart is back as it was. Redo shows them anyway, or ask again.": "Le modifiche dell'assistente avevano ancora errori, quindi il diagramma è tornato com'era. Con Ripeti le vedi comunque, oppure chiedi di nuovo.",
+  "The shapes of the function on screen are replaced; you can undo it": "I blocchi della funzione sullo schermo vengono sostituiti; puoi annullare"
 }
